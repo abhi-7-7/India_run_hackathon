@@ -5,6 +5,4 @@ __pycache__/
 .DS_Store
 .ipynb_checkpoints/
 raw_dataset/*
-EDA/test_output.txt
 *.zip
-EDA/01_test.py
