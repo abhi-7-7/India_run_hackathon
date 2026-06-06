@@ -333,6 +333,6 @@ Potential future enhancements:
 
 # Author
 
-Aarsh Bhatnagar
+Aarsh Bhatnagar,Prakhar Srivastava
 
 Developed for the REDRO AI Hiring Hackathon.
