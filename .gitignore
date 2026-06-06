@@ -6,3 +6,5 @@ __pycache__/
 .ipynb_checkpoints/
 raw_dataset/*
 *.zip
+outputs/*
+EDA/outputs/*
