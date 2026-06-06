@@ -7,4 +7,4 @@ __pycache__/
 raw_dataset/*
 *.zip
 outputs/*
-EDA/outputs/*
+Notebook/outputs/*

@@ -11,7 +11,7 @@
 # |---|---|
 # | Dataset | `candidates.jsonl` (full, 100 k) |
 # | Path | `../raw_dataset/candidates.jsonl` |
-# | Notebook | `REDRO_AI/EDA/01_eda.ipynb` |
+# | Notebook | `REDRO_AI/Notebook/01_eda.ipynb` |
 # | Python | 3.11+ (Anaconda) |
 # ---
 
@@ -1378,5 +1378,4 @@ print(avail_df["work_mode"].value_counts().to_string())
 # ---
 # **EDA-01 STATUS: FINAL ✅**
 # *→ Proceed to Notebook 02: Feature Engineering + Ranking Pipeline*
-
 
