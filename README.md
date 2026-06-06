@@ -70,7 +70,7 @@ Key fields analyzed:
 ```text
 REDRO_AI/
 │
-├── EDA/
+├── Notebook/
 │   ├── 01_eda.ipynb
 │   ├── 02_fea_eng.ipynb
 │   ├── 03_rank.ipynb
@@ -244,7 +244,7 @@ Candidate Ranking Pipeline:
 ```text
 100,000 Candidates
         ↓
-EDA
+Notebook
         ↓
 Feature Engineering
         ↓

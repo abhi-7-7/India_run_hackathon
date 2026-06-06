@@ -1,5 +1,5 @@
 Python : 3.13.9 | packaged by Anaconda, Inc. | (main, Oct 21 2025, 19:11:29) [Clang 20.1.8 ]
-CWD    : /Users/aarsh.user/Desktop/REDRO_AI/EDA
+CWD    : /Users/aarsh.user/Desktop/REDRO_AI/Notebook
 ✅ Dataset loaded successfully
    Total candidates : 100,000
    First ID         : CAND_0000001
