@@ -1,0 +1,66 @@
+# REDRO AI Hackathon — Submission Metadata
+
+team_id: REDRO_AI
+team_name: REDRO AI
+leaderboard_name: Aarsh Bhatnagar
+
+github_repo: https://github.com/abhi-7-7/India_run_hackathon
+submission_file: REDRO_AI.csv
+
+primary_language: Python
+python_version: "3.11"
+
+approach: |
+  Evidence-first candidate ranking system.
+
+  Architecture (4 notebooks + 1 production script):
+
+  Notebook 01 — EDA
+    Discovered 16 data quality patterns including sentinel-encoded
+    missing values, uniform skill distributions, and title-skills
+    decoupling. 40+ observations across 16 analysis phases.
+
+  Notebook 02 — Feature Engineering
+    55 engineered features from raw candidate JSON.
+    Key evidence signals: evaluation_signal_score (NDCG/MRR/MAP
+    in career descriptions), production_signal_score (deployed/
+    shipped evidence), semantic_percentile (JD alignment via
+    all-MiniLM-L6-v2). Sentinel-safe feature construction
+    throughout.
+
+  Notebook 03 — Recruiter Decision Engine
+    Four-engine scoring architecture:
+      Capability  (60%) — can they do the job?
+      Validation  (25%) — has the market confirmed them?
+      Availability(15%) — can we hire them?
+      Risk              — multiplier (consulting, honeypot)
+    Plus: experience_fit multiplier, product_company_bonus.
+    Formula: base_score x risk x availability x exp_fit x product_bonus
+
+  Notebook 04 — Evaluation & Validation
+    Ablation study, failure analysis, business insights.
+    Top-100 overlap V1 vs V2: 87/100 (formula robustness).
+    Experience fit: 95/100 candidates in JD range (5-9yr).
+
+  Core philosophy:
+    Evidence of production experience and evaluation framework
+    ownership outweighs raw keyword matching.
+    A candidate who wrote "improved NDCG@10 by 12%" in their
+    career history ranks above one who lists FAISS as a skill
+    but has no measurement evidence.
+
+ai_tools_used:
+  - Claude (Anthropic) — code review and design iteration
+  - sentence-transformers (all-MiniLM-L6-v2) — semantic matching
+
+key_features:
+  - evaluation_signal_score
+  - production_signal_score
+  - semantic_percentile
+  - quality_score_log
+  - behavior_score
+  - availability_score
+  - experience_fit
+  - consulting_ratio
+  - product_company_ratio
+  - is_honeypot

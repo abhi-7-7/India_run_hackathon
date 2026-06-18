@@ -1,338 +1,224 @@
-# REDRO AI – Retrieval & Recommendation Candidate Ranking System
+# REDRO AI — Intelligent Candidate Ranking
 
-## Overview
-
-This project was developed for the REDRO AI Hiring Hackathon.
-
-The challenge is to identify the strongest candidates for a Retrieval, Search, Ranking, and Recommendation Systems role from a dataset containing over 100,000 candidate profiles.
-
-Instead of relying on simple keyword matching, this solution combines:
-
-* Exploratory Data Analysis (EDA)
-* Feature Engineering
-* Semantic Similarity Modeling
-* Recruiter Behavior Signals
-* Availability Signals
-* Risk Detection
-* Multi-factor Candidate Ranking
-
-The final output is a ranked list of the top candidates most relevant to the target job description.
+> **Hackathon:** REDRO AI — Intelligent Candidate Discovery & Ranking  
+> **Team:** Aarsh Bhatnagar  
+> **Approach:** Evidence-first recruiter decision engine  
+> **GitHub:** https://github.com/abhi-7-7/India_run_hackathon
 
 ---
 
-# Problem Statement
+## Quick Start
 
-Traditional candidate search systems often fail because they rely heavily on:
+```bash
+git clone https://github.com/abhi-7-7/India_run_hackathon
+cd India_run_hackathon
+pip install -r requirements.txt
 
-* Exact keyword matching
-* Skill counts
-* Resume buzzwords
+# Place dataset at:
+#   raw_dataset/candidates.jsonl
 
-However, strong candidates frequently demonstrate expertise through:
-
-* Career history
-* Project descriptions
-* Ranking and retrieval experience
-* Production deployments
-* Evaluation metrics (NDCG, MRR, MAP)
-* Recruiter engagement signals
-
-The objective was to build a system that identifies true candidate capability rather than keyword density.
+python rank.py
+# → REDRO_AI.csv  (100 ranked candidates, ready to submit)
+```
 
 ---
 
-# Dataset
+## Repository Structure
 
-Candidate Dataset:
-
-* 100,000 candidate profiles
-* Career history
-* Skills
-* Certifications
-* Assessments
-* Recruiter behavior signals
-* Availability signals
-
-Key fields analyzed:
-
-* Experience
-* Current Title
-* Skills
-* Career History
-* Certifications
-* Recruiter Signals
-* Availability Signals
-
----
-
-# Project Structure
-
-```text
-REDRO_AI/
+```
+India_run_hackathon/
 │
 ├── Notebook/
-│   ├── 01_eda.ipynb
-│   ├── 02_fea_eng.ipynb
-│   ├── 03_rank.ipynb
-│   ├── 01_test.py
-│   ├── 02_test.py
-│   ├── 03_test.py
+│   ├── 01_eda.ipynb           EDA — 16 phases, 40+ observations
+│   ├── 02_fea_eng.ipynb       Feature engineering — 55 features
+│   ├── 03_rank.ipynb          Ranking engine — 4-engine formula
+│   ├── 04_final.ipynb         Evaluation, ablation, business insights
+│   │
+│   └── outputs/               ← created when notebooks are run
+│       ├── features_df.pkl    55-feature table (100k × 55)
+│       ├── semantic_similarity.npy  cached embeddings
+│       ├── submission.csv     submitted top-100
+│       ├── final_ranked_all.csv     full 100k ranking
+│       └── top100_candidates.csv    top 100 with feature context
 │
-├── outputs/
-│   ├── submission.csv
-│   ├── top100_candidates.csv
-│   ├── final_ranked_all.csv
+├── raw_dataset/
+│   └── candidates.jsonl       100,000 candidate profiles (not in repo)
 │
-├── README.md
-└── .gitignore
+├── rank.py                    End-to-end script → REDRO_AI.csv
+├── app.py                     Streamlit demo
+├── requirements.txt
+├── submission_metadata.yaml
+└── README.md
 ```
 
 ---
 
-# Notebook 01 – Exploratory Data Analysis
+## Data Flow
 
-Purpose:
-
-Understand the structure and quality of the candidate dataset.
-
-Major analyses:
-
-* Candidate distribution
-* Experience distribution
-* Skill frequency analysis
-* Degree analysis
-* Certification analysis
-* Recruiter signal analysis
-* Correlation analysis
-* Retrieval candidate discovery
-* Behavioral signal exploration
-
-Key findings:
-
-* Retrieval skills are extremely rare
-* Evaluation metrics appear primarily in career descriptions
-* Recruiter behavior provides valuable validation signals
-* Certifications are weak standalone indicators
-* Production experience is more predictive than keyword count
-
----
-
-# Notebook 02 – Feature Engineering
-
-Purpose:
-
-Convert raw candidate information into ranking-ready features.
-
-Generated Features:
-
-### Skill Features
-
-* retrieval_score
-* llm_score
-* ml_score
-
-### Quality Features
-
-* quality_score
-* career_depth_score
-* assessment_score
-
-### Semantic Features
-
-* semantic_similarity
-
-### Recruiter Validation Features
-
-* behavior_score
-
-### Availability Features
-
-* availability_score
-
-### Risk Features
-
-* consulting_ratio
-* is_honeypot
-
-### Career Evidence Features
-
-* evaluation_signal_score
-* production_signal_score
-* career_keyword_score
-
-Output:
-
-```text
-features_df.pkl
-features_df.csv
+```
+candidates.jsonl  (raw input)
+       │
+       ▼
+Notebook/02_fea_eng.ipynb
+  builds 55 features per candidate
+  saves → Notebook/outputs/features_df.pkl
+  saves → Notebook/outputs/semantic_similarity.npy
+       │
+       ▼
+Notebook/03_rank.ipynb
+  loads features_df.pkl
+  applies 4-engine scoring formula
+  saves → Notebook/outputs/submission.csv
+  saves → Notebook/outputs/final_ranked_all.csv
+       │
+       ▼
+Notebook/04_final.ipynb
+  loads all outputs
+  runs ablation, validation, business insights
+       │
+       ▼
+rank.py  (standalone production script)
+  reproduces full pipeline from raw data
+  loads embedding cache if present (skips 8-min step)
+  exports → REDRO_AI.csv  ← submit this file
 ```
 
-Approximately:
+**Note on rank.py:** `rank.py` is a self-contained reproduction script.
+It rebuilds all features from `candidates.jsonl` so the submission can be
+reproduced on any machine without running the notebooks first.
+It automatically uses the embedding cache at `Notebook/outputs/semantic_similarity.npy`
+if it exists, cutting runtime from ~10 minutes to ~1 minute.
 
-```text
-100,000 candidates
-48 engineered features
+---
+
+## Reproducing Results
+
+### Option A — Run notebooks in order (recommended for full analysis)
+
+```bash
+cd India_run_hackathon/Notebook
+jupyter notebook
+
+# Run in order:
+# 1. 01_eda.ipynb
+# 2. 02_fea_eng.ipynb     ← produces features_df.pkl
+# 3. 03_rank.ipynb        ← produces submission.csv
+# 4. 04_final.ipynb       ← validation and analysis
 ```
 
----
+Outputs appear in `Notebook/outputs/`.
 
-# Notebook 03 – Ranking Engine
+### Option B — Single command reproduction
 
-Purpose:
-
-Convert engineered features into recruiter-style ranking decisions.
-
-Ranking Architecture:
-
-## Capability Engine
-
-Measures:
-
-* Retrieval expertise
-* Semantic relevance
-* Production experience
-* Evaluation experience
-* Technical depth
-
-## Validation Engine
-
-Measures:
-
-* Recruiter interest
-* Profile engagement
-* Assessment performance
-
-## Availability Engine
-
-Measures:
-
-* Hiring readiness
-* Candidate responsiveness
-
-## Risk Engine
-
-Penalizes:
-
-* Consulting-only profiles
-* Honeypot profiles
-* Weak experience fit
-
----
-
-# Final Ranking Formula
-
-Final score combines:
-
-```text
-Capability
-+
-Validation
-+
-Availability
--
-Risk
+```bash
+cd India_run_hackathon
+python rank.py
 ```
 
-The system emphasizes evidence-based candidate quality rather than keyword matching.
+**Runtime:**
+- First run with no cache: ~10 minutes (sentence-transformer embeddings)
+- Subsequent runs or if `Notebook/outputs/semantic_similarity.npy` exists: ~1 minute
+
+Output: `REDRO_AI.csv`
+
+### Validate the submission
+
+```bash
+python validate_submission.py REDRO_AI.csv
+```
+
+Expected: `PASS`
 
 ---
 
-# Methodology
+## Streamlit Demo
 
-Candidate Ranking Pipeline:
+```bash
+cd India_run_hackathon
+streamlit run app.py
+```
 
-```text
-100,000 Candidates
-        ↓
-Notebook
-        ↓
-Feature Engineering
-        ↓
-Semantic Similarity
-        ↓
-Capability Scoring
-        ↓
-Validation Scoring
-        ↓
-Availability Scoring
-        ↓
-Risk Adjustment
-        ↓
-Final Ranking
-        ↓
-Top 100 Candidates
+### Two modes:
+
+**Default JD (Submission)**
+Shows the exact submitted top-100 candidates loaded from
+`Notebook/outputs/submission.csv`. Results are identical to `REDRO_AI.csv`.
+Demo = Submission. No divergence.
+
+**Custom JD (Explore)**
+User pastes any job description. The app re-ranks a **stratified sample
+of 3,000 candidates** (top by evaluation evidence + top by retrieval skills
++ random) using the same `all-MiniLM-L6-v2` model and identical NB03 formula.
+Note: custom JD mode ranks the 3,000-candidate sample for responsiveness,
+not the full 100k pool. Use `rank.py` with a modified `JD_TEXT` for full-pool ranking.
+
+---
+
+## Scoring Formula
+
+```
+capability_score = (
+    0.25 × semantic_percentile_capped    # JD holistic alignment
+  + 0.15 × evaluation_signal_combo       # NDCG/MRR/MAP in career descriptions
+  + 0.15 × production_signal_score       # deployed/shipped evidence
+  + 0.18 × retrieval_score               # core retrieval tool skills
+  + 0.11 × quality_score_log             # skill depth (proficiency × duration)
+  + 0.07 × career_keyword_score          # domain vocabulary density
+  + 0.09 × avg_ai_assessment_score       # platform-verified skill scores
+)
+
+validation_score = (
+    0.40 × saved_by_recruiters            # independent market validation
+  + 0.30 × recruiter_response_rate        # engagement signal
+  + 0.20 × interview_completion_rate      # reliability
+  + 0.10 × profile_views                  # passive interest
+)
+
+base_score   = 0.60 × capability + 0.25 × validation + 0.15 × availability
+
+final_score  = base_score
+             × risk_multiplier            # consulting penalty + honeypot gate
+             × availability_multiplier    # recency gate (0.30–1.10)
+             × experience_fit             # JD band: 1.0 at 5–9yr, min 0.60
+             × product_company_bonus      # +10% for known product companies
 ```
 
 ---
 
-# Results
+## Key Design Decisions
 
-Generated Outputs:
-
-* features_df.pkl
-* features_df.csv
-* final_ranked_all.csv
-* top100_candidates.csv
-* submission.csv
-
-The ranking system successfully identifies candidates with:
-
-* Retrieval experience
-* Recommendation system experience
-* Ranking expertise
-* Search relevance experience
-* Production ML deployment experience
-
-while filtering out candidates with weak evidence despite strong keyword overlap.
+| Decision | Rationale |
+|---|---|
+| Evidence > Keywords | NDCG/MRR in career text > listing FAISS as a skill |
+| `rank(pct=True)` normalization | Handles 1.8% eval signal sparsity better than MinMaxScaler |
+| Availability as multiplier | Stale candidate (11 months inactive) → score × 0.30 |
+| Experience fit gate | Graded: 1.0 at 5–9yr, 0.60 below 3yr or above 12yr |
+| Product company bonus | +10% for Google/Amazon/Uber/Swiggy/Flipkart etc. |
+| Honeypot near-zero (×0.05) | Keeps sort order; all below real candidates |
 
 ---
 
-# Technologies Used
+## Ablation Study (from Notebook 04)
 
-Python
-
-Libraries:
-
-* Pandas
-* NumPy
-* Matplotlib
-* Seaborn
-* Sentence Transformers
-* Scikit-learn
+| Component Removed | Top-100 Overlap | Importance |
+|---|---|---|
+| Experience Fit | 69% | **Critical** |
+| Evaluation Signal | 83% | High |
+| Validation (Behavioral) | 89% | High |
+| Production Signal | 91% | Moderate |
+| Risk Filter | 94% | Gate (correct) |
 
 ---
 
-# Key Insights
+## Submission Validation
 
-The strongest candidates were not necessarily those with the most AI buzzwords.
-
-High-performing candidates consistently showed:
-
-* Retrieval system ownership
-* Ranking experience
-* Production deployments
-* Evaluation framework familiarity
-* Recruiter validation signals
-
-This reinforces the importance of evidence-driven hiring rather than keyword-driven hiring.
-
----
-
-# Future Improvements
-
-Potential future enhancements:
-
-* Learning-to-Rank models
-* Pairwise ranking objectives
-* Cross-encoder semantic matching
-* Product-company quality scoring
-* Recruiter feedback loop integration
-* Real-time ranking API
-
----
-
-# Author
-
-Aarsh Bhatnagar,Prakhar Srivastava
-
-Developed for the REDRO AI Hiring Hackathon.
+| Check | Result |
+|---|---|
+| 100 rows | ✅ |
+| Unique candidate IDs | ✅ |
+| Ranks 1–100 | ✅ |
+| Scores non-increasing | ✅ |
+| No empty reasoning | ✅ |
+| Honeypot rate < 10% | ✅ |
+| In JD experience range (5–9yr) | 95/100 |
+| V1 vs V2 formula overlap | 87/100 (stable) |

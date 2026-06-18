@@ -9,3 +9,4 @@ raw_dataset/*
 outputs/
 EDA/*
 Notebook/outputs/*
+validate_submission.py
