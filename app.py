@@ -8,7 +8,7 @@ Two modes:
   Custom JD   — live ranking using same sentence-transformers + NB03 formula
 """
 
-import json, os, math, re, warnings
+import json, os, math, re, pickle, warnings
 from datetime import date
 
 import numpy as np
@@ -17,6 +17,13 @@ import streamlit as st
 import matplotlib.pyplot as plt
 
 warnings.filterwarnings("ignore")
+
+# ── Optional FAISS (local only — degrades gracefully on Streamlit Cloud) ──────
+try:
+    import faiss as _faiss
+    _FAISS_AVAILABLE = True
+except ImportError:
+    _FAISS_AVAILABLE = False
 
 # ── Page config ────────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -130,6 +137,36 @@ def load_model():
         return SentenceTransformer("all-MiniLM-L6-v2")
     except ImportError:
         return None
+
+
+@st.cache_resource(show_spinner=False)
+def load_faiss_index():
+    """Load FAISS index + candidate ID mapping. Returns (None, None) if unavailable."""
+    if not _FAISS_AVAILABLE:
+        return None, None
+    idx_path = _find_output("faiss_index.bin")
+    ids_path = _find_output("faiss_ids.npy")
+    if not idx_path or not ids_path:
+        return None, None
+    try:
+        index = _faiss.read_index(idx_path)
+        ids   = np.load(ids_path, allow_pickle=True)
+        return index, ids
+    except Exception:
+        return None, None
+
+
+@st.cache_data(show_spinner=False)
+def load_scoring_thresholds():
+    """Load percentile breakpoints for new-candidate scoring."""
+    path = _find_output("scoring_thresholds.pkl")
+    if not path:
+        return {}
+    try:
+        with open(path, "rb") as f:
+            return pickle.load(f)
+    except Exception:
+        return {}
 
 
 @st.cache_data(show_spinner="Pre-computing candidate embeddings for custom JD mode…")
@@ -340,6 +377,239 @@ def render_candidate_card(rank, row, cands_lookup, show_breakdown):
                     )
 
 
+# ── New-candidate evaluation helpers ─────────────────────────────────────────
+
+_EVAL_TRIGGERS = {
+    "fit","evaluate","assess","rank this","compare this",
+    "is this","new candidate","hire","should we","what do you think",
+}
+_INPUT_FIELD_KEYS = {"title","experience","exp","skills","evaluation","eval",
+                     "production","prod","location","consulting","notice","github"}
+
+def _is_eval_intent(q, query):
+    """True when the message looks like a new-candidate evaluation request."""
+    if any(t in q for t in _EVAL_TRIGGERS):
+        return True
+    # key:value structured input
+    if ":" in query:
+        keys_present = {line.split(":")[0].strip().lower()
+                        for line in query.split("\n") if ":" in line}
+        return bool(keys_present & _INPUT_FIELD_KEYS)
+    return False
+
+
+def _parse_candidate_input(text):
+    """Parse key:value or free-text candidate details into a structured dict."""
+    parsed = {
+        "title": "", "experience": 0.0, "skills": [],
+        "has_eval_signal": False, "has_production": False,
+        "location": "", "consulting_ratio": 0.0,
+        "notice_days": 30, "github_score": -1.0,
+    }
+    q = text.lower()
+
+    for line in text.strip().split("\n"):
+        line = line.strip()
+        if not line or ":" not in line:
+            continue
+        key, _, val = line.partition(":")
+        key, val = key.strip().lower(), val.strip()
+
+        if key in ("title", "current title", "role", "designation"):
+            parsed["title"] = val
+        elif key in ("experience", "exp", "years", "yrs", "experience years"):
+            m = re.search(r"\d+\.?\d*", val)
+            if m: parsed["experience"] = float(m.group())
+        elif key in ("skills", "tech stack", "technologies", "tools"):
+            parsed["skills"] = [s.strip() for s in re.split(r"[,;]", val) if s.strip()]
+        elif key in ("evaluation", "eval", "metrics", "evaluation metrics"):
+            parsed["has_eval_signal"] = any(
+                kw in val.lower() for kw in ["ndcg","mrr","map","a/b","offline","ranking quality"]
+            )
+        elif key in ("production", "prod", "deployed", "deployment"):
+            parsed["has_production"] = any(
+                kw in val.lower() for kw in ["deploy","ship","production","serving","million","scale","users"]
+            )
+        elif key in ("location", "city", "base"):
+            parsed["location"] = val.lower()
+        elif key in ("consulting", "consulting_ratio", "outsourcing"):
+            m = re.search(r"\d+\.?\d*", val)
+            if m:
+                v = float(m.group())
+                parsed["consulting_ratio"] = v / 100 if v > 1 else v
+        elif key in ("notice", "notice period", "notice_period"):
+            m = re.search(r"\d+", val)
+            if m: parsed["notice_days"] = int(m.group())
+        elif key in ("github", "github score", "open source", "opensource"):
+            m = re.search(r"\d+\.?\d*", val)
+            if m: parsed["github_score"] = float(m.group())
+
+    # Fallback free-text signals
+    if parsed["experience"] == 0.0:
+        m = re.search(r"(\d+)\s*(?:yr|year)", q)
+        if m: parsed["experience"] = float(m.group(1))
+    if not parsed["has_eval_signal"]:
+        parsed["has_eval_signal"] = any(kw in q for kw in ["ndcg","mrr","map","a/b test"])
+    if not parsed["has_production"]:
+        parsed["has_production"] = any(kw in q for kw in ["deployed","shipped","production","at scale"])
+
+    return parsed
+
+
+def _estimate_pct(thresholds, col, value):
+    """Estimate where `value` falls in the pool's distribution for `col`."""
+    arr = thresholds.get(col)
+    if arr is None or len(arr) == 0:
+        return 0.5
+    idx = np.searchsorted(arr, value, side="right")
+    return float(idx) / len(arr)
+
+
+def _score_new_candidate(parsed, thresholds, faiss_index, faiss_ids, features_df, model):
+    """
+    Approximate JD-fit score for a new candidate.
+    Returns a result dict; never raises — degrades to lower-confidence output
+    if FAISS or model isn't available.
+    """
+    # ── Step 1: FAISS semantic similarity ──────────────────────────────────────
+    nearest_ids, semantic_pct = [], 0.55
+    text = (f"{parsed['title']} " +
+            " ".join(parsed["skills"]) +
+            (" NDCG MRR MAP evaluation metrics" if parsed["has_eval_signal"] else "") +
+            (" deployed production serving at scale" if parsed["has_production"] else ""))
+
+    if faiss_index is not None and model is not None:
+        try:
+            emb = model.encode([text], convert_to_numpy=True).astype("float32")
+            _faiss.normalize_L2(emb)
+            scores, indices = faiss_index.search(emb, 5)
+            nearest_ids = [str(faiss_ids[i]) for i in indices[0] if i >= 0]
+            top_sim = float(scores[0][0])
+            if "semantic_similarity" in thresholds:
+                semantic_pct = _estimate_pct(thresholds, "semantic_similarity", top_sim)
+            else:
+                semantic_pct = min(top_sim, 0.97)
+        except Exception:
+            pass
+    else:
+        # No FAISS — estimate from JD skill coverage. Conservative vs. true
+        # embedding similarity but much better than a fixed 0.55.
+        jd_all = {s.lower() for s in (RETRIEVAL_SKILLS | LLM_SKILLS | ML_SKILLS)}
+        n_matched = len({s.lower() for s in parsed["skills"]} & jd_all)
+        semantic_pct = 0.50 + 0.45 * min(n_matched / 8.0, 1.0)
+
+    # ── Step 2: Feature estimation from parsed fields ──────────────────────────
+    skill_set = {s.strip() for s in parsed["skills"]}
+    skill_lower = {s.lower() for s in skill_set}
+
+    ret_count   = sum(1 for rs in RETRIEVAL_SKILLS if rs.lower() in skill_lower)
+    ret_raw     = ret_count * 5.0
+    eval_raw    = 0.75 if parsed["has_eval_signal"] else 0.0
+    prod_raw    = 0.65 if parsed["has_production"]  else 0.0
+    quality_raw = min(1.0, ret_count * 0.2)
+    kw_raw      = min(1.0, sum(1 for s in skill_lower if any(s in a.lower() for a in AI_ALL)) * 0.08)
+    assessment  = 0.65  # platform score unknown; assume pool average
+
+    notice = parsed["notice_days"]
+    avail  = 1.0 if notice <= 30 else (0.85 if notice <= 60 else (0.70 if notice <= 90 else 0.50))
+
+    # ── Step 3: Normalise via pool percentile thresholds ──────────────────────
+    sem_capped  = min(semantic_pct, 0.97)
+    eval_pct    = _estimate_pct(thresholds, "evaluation_signal_score",   eval_raw)
+    prod_pct    = _estimate_pct(thresholds, "production_signal_score",   prod_raw)
+    ret_pct     = _estimate_pct(thresholds, "retrieval_score",           ret_raw)
+    qual_pct    = _estimate_pct(thresholds, "quality_score_log",         quality_raw)
+    kw_pct      = _estimate_pct(thresholds, "career_keyword_score",      kw_raw)
+    assess_pct  = _estimate_pct(thresholds, "avg_ai_assessment_score",   assessment)
+    avail_pct   = _estimate_pct(thresholds, "availability_score",        avail)
+
+    eval_combo  = 0.6 * eval_pct + 0.4 * float(eval_raw > 0)
+
+    capability  = (0.25*sem_capped + 0.15*eval_combo + 0.15*prod_pct +
+                   0.18*ret_pct    + 0.11*qual_pct   + 0.07*kw_pct + 0.09*assess_pct)
+    validation  = 0.40*0.50 + 0.30*0.60 + 0.20*0.80 + 0.10*0.40   # platform unknowns → pool avg
+    base        = 0.60*capability + 0.25*validation + 0.15*avail_pct
+
+    # ── Step 4: Multipliers (same formula as rank.py) ─────────────────────────
+    exp = parsed["experience"]
+    if 5 <= exp <= 9:    exp_fit = 1.00
+    elif 4 <= exp < 5:   exp_fit = 0.90
+    elif 9 < exp <= 12:  exp_fit = 0.85
+    elif 3 <= exp < 4:   exp_fit = 0.75
+    else:                exp_fit = 0.60
+
+    consulting_mult = 1 - 0.80 * parsed["consulting_ratio"]
+    github_mult     = 1.0 + 0.05 * (parsed["github_score"] / 100.0) if parsed["github_score"] >= 0 else 1.0
+    prod_gate       = 1.0 if parsed["has_production"] else 0.5
+
+    final_score = base * consulting_mult * avail * exp_fit * github_mult * prod_gate
+
+    # ── Step 5: Verdict + rank band ───────────────────────────────────────────
+    if final_score >= 0.92 and exp_fit == 1.0 and parsed["has_eval_signal"]:
+        verdict = "STRONG FIT ✅"
+    elif final_score >= 0.82 and exp_fit >= 0.9:
+        verdict = "MODERATE FIT 🟡"
+    elif exp_fit < 0.7:
+        verdict = f"NOT A FIT ❌ — experience {exp:.1f}yr outside JD range (5–9yr)"
+    elif not parsed["has_production"]:
+        verdict = "WEAK FIT 🔴 — no production deployment evidence"
+    else:
+        verdict = "WEAK FIT 🔴"
+
+    if   final_score >= 0.97: rank_band = "top 5"
+    elif final_score >= 0.93: rank_band = "top 10"
+    elif final_score >= 0.88: rank_band = "top 25"
+    elif final_score >= 0.83: rank_band = "top 50"
+    elif final_score >= 0.78: rank_band = "top 100"
+    else:                     rank_band = "outside top 100"
+
+    jd_matched = [s for s in parsed["skills"]
+                  if any(s.lower() == r.lower() for r in RETRIEVAL_SKILLS)]
+    missing    = [m for m in [
+        "Evaluation metrics in career history (NDCG/MRR/MAP)" if not parsed["has_eval_signal"] else None,
+        "Production deployment evidence"                        if not parsed["has_production"]  else None,
+        f"Experience {exp:.1f}yr outside JD band (5–9yr)"     if exp_fit < 0.9               else None,
+    ] if m]
+
+    return {
+        "score": final_score, "rank_band": rank_band, "verdict": verdict,
+        "exp_fit": exp_fit,   "nearest_ids": nearest_ids,
+        "has_faiss": faiss_index is not None,
+        "signals": {
+            "Semantic align":    f"{sem_capped:.2f}",
+            "Eval evidence":     f"{eval_raw:.2f}  {'✅' if parsed['has_eval_signal'] else '❌'}",
+            "Production signal": f"{prod_raw:.2f}  {'✅' if parsed['has_production']  else '❌'}",
+            "Retrieval skills":  f"{ret_count} matched: {', '.join(jd_matched[:4]) or 'none'}",
+            "Experience fit":    f"{exp_fit:.2f}  ({exp:.1f}yr)",
+            "Consulting risk":   f"{parsed['consulting_ratio']:.0%}" if parsed["consulting_ratio"] > 0 else "None",
+            "GitHub activity":   f"{parsed['github_score']:.0f}/100" if parsed["github_score"] >= 0 else "Not linked",
+        },
+        "missing": missing,
+    }
+
+
+def _render_eval_result(result, chat_df, cands_lookup):
+    """Render new-candidate evaluation result inside a chat message."""
+    st.markdown(f"### {result['verdict']}")
+    st.markdown(f"**Estimated score:** `{result['score']:.4f}` → **{result['rank_band']}** in pool")
+    if not result["has_faiss"]:
+        st.caption("⚠️  FAISS index not loaded — semantic similarity estimated from skills only. "
+                   "Run `python rank.py` locally for full accuracy.")
+    st.markdown("**Signal breakdown:**")
+    rows = [{"Signal": k, "Value": v} for k, v in result["signals"].items()]
+    st.dataframe(pd.DataFrame(rows), hide_index=True, use_container_width=True)
+    if result["missing"]:
+        st.markdown("**What's missing:**")
+        for m in result["missing"]:
+            st.markdown(f"- {m}")
+    if result["nearest_ids"]:
+        st.markdown(f"**Most similar candidates in top-100:**")
+        for nid in result["nearest_ids"][:3]:
+            row = chat_df[chat_df["candidate_id"] == nid]
+            if not row.empty:
+                render_candidate_card(int(row.iloc[0]["rank"]), row.iloc[0], cands_lookup, False)
+
+
 # ── Chat helpers ─────────────────────────────────────────────────────────────────
 def _safe_float(val, default=0.0):
     try:
@@ -348,10 +618,43 @@ def _safe_float(val, default=0.0):
         return default
 
 
-def _chat_parse_and_respond(query, chat_df, cands_lookup):
+def _chat_parse_and_respond(query, chat_df, cands_lookup, faiss_index=None,
+                             faiss_ids=None, features_df=None, thresholds=None, model=None):
     """Parse a natural-language query and return a response dict."""
     q    = query.lower().strip()
     nums = [int(n) for n in re.findall(r'\b(\d{1,3})(?:st|nd|rd|th)?\b', q) if 1 <= int(n) <= 100]
+
+    # ── New-candidate evaluation intent ──────────────────────────────────────
+    if _is_eval_intent(q, query):
+        parsed = _parse_candidate_input(query)
+        if parsed["experience"] == 0 and not parsed["skills"] and not parsed["title"]:
+            return {
+                "role": "assistant",
+                "content": (
+                    "Paste candidate details in this format:\n\n"
+                    "```\n"
+                    "title: Senior ML Engineer\n"
+                    "experience: 6\n"
+                    "skills: FAISS, Embeddings, BM25, Elasticsearch\n"
+                    "evaluation: improved NDCG@10 by 12%\n"
+                    "production: deployed recommendation system at scale\n"
+                    "location: Pune\n"
+                    "consulting: 0\n"
+                    "notice: 30\n"
+                    "github: 75\n"
+                    "```\n"
+                    "I'll score them against the JD and compare to the ranked pool."
+                ),
+                "show_ranks": [], "comparison": None, "eval_result": None,
+            }
+        result = _score_new_candidate(
+            parsed, thresholds or {}, faiss_index, faiss_ids, features_df, model
+        )
+        return {
+            "role": "assistant",
+            "content": f"**New candidate evaluation** — `{parsed['title'] or 'Unknown title'}` · {parsed['experience']:.0f}yr",
+            "show_ranks": [], "comparison": None, "eval_result": result,
+        }
 
     is_compare = any(w in q for w in ["compare","vs","versus","why","better","differ","difference"])
     is_range   = bool(re.search(r'\b\d+\s*(?:to|through)\s*\d+\b|\b\d+-\d+\b', query, re.IGNORECASE)) and len(nums) == 2
@@ -421,7 +724,7 @@ def _chat_parse_and_respond(query, chat_df, cands_lookup):
             "role": "assistant",
             "content": f"Showing ranks **{r_start}–{r_end}**{cap_note}:",
             "show_ranks": list(range(r_start, r_end + 1)),
-            "comparison": None,
+            "comparison": None, "eval_result": None,
         }
 
     # ── Specific list ─────────────────────────────────────────────────────────
@@ -430,7 +733,7 @@ def _chat_parse_and_respond(query, chat_df, cands_lookup):
             "role": "assistant",
             "content": f"Showing candidates at rank **{', '.join(str(n) for n in sorted(nums))}**:",
             "show_ranks": sorted(nums),
-            "comparison": None,
+            "comparison": None, "eval_result": None,
         }
 
     # ── Single rank ───────────────────────────────────────────────────────────
@@ -453,10 +756,14 @@ def _chat_parse_and_respond(query, chat_df, cands_lookup):
                 "| Range | `11 to 20` · `11-20` |\n"
                 "| Multiple specific | `42, 44` · `3 and 9 and 15` |\n"
                 "| Compare | `compare 3 and 7` · `3 vs 7` |\n"
-                "| Explain gap | `why is 5 better than 7` · `difference between 2 and 8` |"
+                "| Explain gap | `why is 5 better than 7` · `difference between 2 and 8` |\n"
+                "| **Evaluate new** | `evaluate this candidate:` then paste details |\n\n"
+                "For new candidate: paste `title:` · `experience:` · `skills:` · "
+                "`evaluation:` · `production:` · `github:`"
             ),
             "show_ranks": [],
             "comparison": None,
+            "eval_result": None,
         }
 
 
@@ -468,6 +775,8 @@ st.caption("Evidence-first recruiter decision engine · [github.com/abhi-7-7/Ind
 features_df  = load_features()
 submission   = load_submission()
 cands_lookup = load_candidates_lookup()
+faiss_index, faiss_ids = load_faiss_index()
+thresholds   = load_scoring_thresholds()
 
 if features_df is None:
     st.error("⚠️  `outputs/features_df.pkl` not found. Run `python rank.py` first.")
@@ -802,14 +1111,21 @@ with tab4:
                         width="stretch",
                         hide_index=True,
                     )
+                if _msg.get("eval_result"):
+                    _render_eval_result(_msg["eval_result"], _chat_df, cands_lookup)
 
         # Chat input
-        if _prompt := st.chat_input("Ask about candidates…"):
+        if _prompt := st.chat_input("Ask about candidates or paste new candidate details…"):
             st.session_state.chat_messages.append({
                 "role": "user", "content": _prompt,
-                "show_ranks": [], "comparison": None,
+                "show_ranks": [], "comparison": None, "eval_result": None,
             })
-            _response = _chat_parse_and_respond(_prompt, _chat_df, cands_lookup)
+            _model = load_model() if (faiss_index is not None) else None
+            _response = _chat_parse_and_respond(
+                _prompt, _chat_df, cands_lookup,
+                faiss_index=faiss_index, faiss_ids=faiss_ids,
+                features_df=features_df, thresholds=thresholds, model=_model,
+            )
             st.session_state.chat_messages.append(_response)
             st.rerun()
 

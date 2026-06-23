@@ -9,4 +9,8 @@ raw_dataset/*
 outputs/
 EDA/*
 Notebook/outputs/*
-validate_submission.py
+!Notebook/outputs/submission.csv
+!Notebook/outputs/features_df.csv
+!Notebook/outputs/scoring_thresholds.pkl
+Notebook/outputs/faiss_index.bin
+Notebook/outputs/candidate_embeddings.npy
