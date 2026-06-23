@@ -21,7 +21,7 @@ approach: |
     decoupling. 40+ observations across 16 analysis phases.
 
   Notebook 02 — Feature Engineering
-    55 engineered features from raw candidate JSON.
+    46 engineered features from raw candidate JSON.
     Key evidence signals: evaluation_signal_score (NDCG/MRR/MAP
     in career descriptions), production_signal_score (deployed/
     shipped evidence), semantic_percentile (JD alignment via
@@ -39,8 +39,8 @@ approach: |
 
   Notebook 04 — Evaluation & Validation
     Ablation study, failure analysis, business insights.
-    Top-100 overlap V1 vs V2: 87/100 (formula robustness).
-    Experience fit: 95/100 candidates in JD range (5-9yr).
+    Top-100 overlap V1 vs V2: 96/100 (formula robustness).
+    Experience fit: 97/100 candidates in JD range (5-9yr).
 
   Core philosophy:
     Evidence of production experience and evaluation framework
@@ -56,11 +56,11 @@ ai_tools_used:
 key_features:
   - evaluation_signal_score
   - production_signal_score
-  - semantic_percentile
+  - semantic_similarity
   - quality_score_log
-  - behavior_score
+  - github_activity_score
   - availability_score
   - experience_fit
   - consulting_ratio
-  - product_company_ratio
+  - product_ratio
   - is_honeypot

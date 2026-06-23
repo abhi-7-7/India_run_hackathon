@@ -30,7 +30,7 @@ India_run_hackathon/
 │
 ├── Notebook/
 │   ├── 01_eda.ipynb           EDA — 16 phases, 40+ observations
-│   ├── 02_fea_eng.ipynb       Feature engineering — 55 features
+│   ├── 02_fea_eng.ipynb       Feature engineering — 46 features
 │   ├── 03_rank.ipynb          Ranking engine — 4-engine formula
 │   ├── 04_final.ipynb         Evaluation, ablation, business insights
 │   │
@@ -60,7 +60,7 @@ candidates.jsonl  (raw input)
        │
        ▼
 Notebook/02_fea_eng.ipynb
-  builds 55 features per candidate
+  builds 46 features per candidate
   saves → Notebook/outputs/features_df.pkl
   saves → Notebook/outputs/semantic_similarity.npy
        │
@@ -220,5 +220,5 @@ final_score  = base_score
 | Scores non-increasing | ✅ |
 | No empty reasoning | ✅ |
 | Honeypot rate < 10% | ✅ |
-| In JD experience range (5–9yr) | 95/100 |
-| V1 vs V2 formula overlap | 87/100 (stable) |
+| In JD experience range (5–9yr) | 97/100 |
+| V1 vs V2 formula overlap | 96/100 (stable) |
