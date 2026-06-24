@@ -6,7 +6,7 @@ __pycache__/
 .ipynb_checkpoints/
 raw_dataset/*
 *.zip
-outputs/
+/outputs/
 EDA/*
 Notebook/outputs/*
 !Notebook/outputs/submission.csv
