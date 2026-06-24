@@ -1,0 +1,101 @@
+candidate_id,rank,score,reasoning
+CAND_0018499,1,1.0189050035390912,7yr senior machine learning engineer with Embeddings/Information Retrieval/Pinecone; career documents evaluation metric ownership (NDCG/MRR); production deployment at scale; 9 expert-level AI skills.
+CAND_0046525,2,0.9498164548419258,6yr senior machine learning engineer with Elasticsearch/Information Retrieval/Sentence Transformers; career documents evaluation metric ownership (NDCG/MRR); production deployment at scale; 3 expert-level AI skills.
+CAND_0010257,3,0.9228329569348337,6yr senior data scientist with Milvus/Recommendation Systems/Machine Learning; evaluation metrics in career history; production deployment at scale; 4 expert-level AI skills. Concerns: 120d notice period.
+CAND_0006567,4,0.9215796248906537,8yr senior ai engineer with BM25/Recommendation Systems; evaluation metrics in career history; production deployment at scale; 3 expert-level AI skills.
+CAND_0086022,5,0.8987696143834737,5yr senior applied scientist with Embeddings/Elasticsearch/Pinecone; career documents evaluation metric ownership (NDCG/MRR); production deployment at scale; 6 expert-level AI skills.
+CAND_0037566,6,0.887876703399955,7yr machine learning engineer with Elasticsearch/Pinecone/BM25; production deployment at scale; 5 expert-level AI skills; platform-verified 82/100.
+CAND_0002025,7,0.8855103195895497,6yr senior ai engineer with FAISS/Pinecone/Sentence Transformers; career documents evaluation metric ownership (NDCG/MRR); production deployment at scale; 8 expert-level AI skills.
+CAND_0018549,8,0.8767722741189228,7yr recommendation systems engineer with Elasticsearch/Milvus/LangChain; evaluation metrics in career history; production deployment evidence; 9 expert-level AI skills.
+CAND_0066999,9,0.8755010027270779,6yr recommendation systems engineer with FAISS/Embeddings/Information Retrieval; production deployment at scale; 4 expert-level AI skills; platform-verified 74/100.
+CAND_0000031,10,0.8674737465801586,6yr recommendation systems engineer with FAISS/Embeddings/Information Retrieval; evaluation metrics in career history; production deployment at scale; 5 expert-level AI skills.
+CAND_0068932,11,0.8617416367539878,5yr ml engineer with Milvus/RAG; production deployment evidence; strong recruiter engagement (82%); based in Noida.
+CAND_0083879,12,0.8595614586722504,7yr machine learning engineer with Milvus/Sentence Transformers/Machine Learning; evaluation metrics in career history; production deployment at scale; 6 expert-level AI skills.
+CAND_0011687,13,0.8521872423379365,8yr senior nlp engineer with FAISS/Embeddings/LangChain; career documents evaluation metric ownership (NDCG/MRR); production deployment at scale; 6 expert-level AI skills.
+CAND_0046064,14,0.8468276688251021,9yr senior nlp engineer with Elasticsearch/Pinecone/BM25; career documents evaluation metric ownership (NDCG/MRR); production deployment at scale; 4 expert-level AI skills.
+CAND_0093912,15,0.8389584683660046,5yr senior data scientist with Embeddings/Elasticsearch/Milvus; production deployment at scale; 4 expert-level AI skills; platform-verified 75/100.
+CAND_0027691,16,0.8379492870707189,6yr nlp engineer with Embeddings/Learning to Rank/Recommendation Systems; evaluation metrics in career history; production deployment evidence; 5 expert-level AI skills.
+CAND_0081846,17,0.83623066676992,7yr lead ai engineer with Embeddings/Elasticsearch/Information Retrieval; career documents evaluation metric ownership (NDCG/MRR); production deployment at scale; 9 expert-level AI skills.
+CAND_0028793,18,0.8358823097029613,7yr search engineer with Embeddings/Information Retrieval/Learning to Rank; evaluation metrics in career history; production deployment at scale; 4 expert-level AI skills. Concerns: 120d notice period.
+CAND_0079387,19,0.8307753127875519,7yr ai engineer with Vector Search/BM25/Sentence Transformers; evaluation metrics in career history; production deployment evidence; 6 expert-level AI skills.
+CAND_0007412,20,0.8302461326325139,7yr applied ml engineer with Pinecone/Milvus/BM25; evaluation metrics in career history; production deployment at scale; 4 expert-level AI skills. Concerns: 120d notice period.
+CAND_0071974,21,0.8269874361651335,8yr senior ai engineer with Embeddings/Elasticsearch/Information Retrieval; career documents evaluation metric ownership (NDCG/MRR); production deployment at scale; 7 expert-level AI skills.
+CAND_0037980,22,0.826495990647792,9yr senior applied scientist with BM25/Recommendation Systems/PyTorch; evaluation metrics in career history; production deployment at scale; 4 expert-level AI skills.
+CAND_0077337,23,0.8211806148748972,7yr staff machine learning engineer with Information Retrieval/Pinecone/BM25; career documents evaluation metric ownership (NDCG/MRR); production deployment at scale; 7 expert-level AI skills.
+CAND_0064326,24,0.8208956560616687,8yr search engineer with Milvus/BM25/RAG; evaluation metrics in career history; production deployment at scale; 5 expert-level AI skills.
+CAND_0030468,25,0.8176388091154511,5yr senior applied scientist with Milvus/Recommendation Systems/Machine Learning; evaluation metrics in career history; production deployment at scale; 4 expert-level AI skills.
+CAND_0072688,26,0.8172336752589503,7yr data scientist with Milvus/Recommendation Systems; production deployment evidence; strong recruiter engagement (87%); based in Pune.
+CAND_0075574,27,0.8170088773558604,6yr machine learning engineer with Elasticsearch/Vector Search/BM25; evaluation metrics in career history; production deployment at scale; 7 expert-level AI skills.
+CAND_0017960,28,0.8162574863439019,8yr recommendation systems engineer with Information Retrieval/Machine Learning; evaluation metrics in career history; production deployment at scale; 5 expert-level AI skills.
+CAND_0061257,29,0.8134482365403931,8yr staff machine learning engineer with Machine Learning; production deployment at scale; strong recruiter engagement (87%); based in Noida.
+CAND_0041669,30,0.8104807517879373,8yr recommendation systems engineer with FAISS/Information Retrieval/Milvus; evaluation metrics in career history; production deployment at scale; 2 expert-level AI skills.
+CAND_0006418,31,0.8090095622738614,6yr machine learning engineer with Embeddings/Elasticsearch/Learning to Rank; evaluation metrics in career history; production deployment at scale; 5 expert-level AI skills.
+CAND_0098846,32,0.8082996668928536,8yr ai engineer with Recommendation Systems/Machine Learning/TensorFlow; evaluation metrics in career history; production deployment evidence; 6 expert-level AI skills.
+CAND_0048558,33,0.8072502316520547,7yr data scientist with Elasticsearch/Information Retrieval; production deployment evidence; strong recruiter engagement (80%); based in Noida.
+CAND_0070514,34,0.8067196564188389,6yr ai specialist with FAISS/Pinecone; production deployment evidence; platform-verified 78/100; strong recruiter engagement (80%).
+CAND_0011162,35,0.7987028081389238,6yr recommendation systems engineer with FAISS/Embeddings/Pinecone; evaluation metrics in career history; production deployment at scale; 7 expert-level AI skills.
+CAND_0091909,36,0.7971906177468798,7yr machine learning engineer with Pinecone/Sentence Transformers/LangChain; evaluation metrics in career history; production deployment at scale; 7 expert-level AI skills.
+CAND_0068811,37,0.7971409079734827,8yr applied ml engineer with Embeddings/Pinecone/Vector Search; evaluation metrics in career history; production deployment evidence; 6 expert-level AI skills.
+CAND_0044222,38,0.7923747864101532,8yr ai engineer with Vector Search/BM25/LangChain; evaluation metrics in career history; production deployment at scale; 4 expert-level AI skills.
+CAND_0093763,39,0.7920469775339543,5yr senior software engineer (ml) with FAISS/Vector Search/Sentence Transformers; production deployment evidence; strong recruiter engagement (92%); based in Noida.
+CAND_0088025,40,0.7919921597653428,9yr staff machine learning engineer with Elasticsearch/Pinecone/BM25; career documents evaluation metric ownership (NDCG/MRR); production deployment at scale; 7 expert-level AI skills.
+CAND_0052328,41,0.7915347071383068,6yr recommendation systems engineer with Vector Search/Sentence Transformers/Learning to Rank; production deployment evidence; 6 expert-level AI skills; platform-verified 76/100.
+CAND_0073883,42,0.7888841052614104,5yr ai specialist with FAISS/Vector Search; production deployment evidence; platform-verified 81/100; strong recruiter engagement (92%).
+CAND_0081053,43,0.7867823495099978,5yr nlp engineer with Learning to Rank/Machine Learning; evaluation metrics in career history; production deployment evidence; 7 expert-level AI skills.
+CAND_0080766,44,0.7854468638575973,9yr staff machine learning engineer with Elasticsearch/Milvus/TensorFlow; career documents evaluation metric ownership (NDCG/MRR); production deployment at scale; 4 expert-level AI skills.
+CAND_0027801,45,0.7842688899847314,7yr nlp engineer with FAISS/Milvus/Vector Search; evaluation metrics in career history; production deployment at scale; 6 expert-level AI skills. Concerns: 120d notice period.
+CAND_0081480,46,0.7804263418944568,6yr computer vision engineer with FAISS/Vector Search/BM25; production deployment evidence; platform-verified 77/100; strong recruiter engagement (85%).
+CAND_0073314,47,0.7799242580944437,5yr senior software engineer (ml) with Elasticsearch/Milvus/PyTorch; production deployment evidence; platform-verified 72/100; strong recruiter engagement (84%).
+CAND_0043860,48,0.7791971975126711,6yr junior ml engineer with Information Retrieval/Vector Search/PyTorch; production deployment evidence; platform-verified 84/100; strong recruiter engagement (81%).
+CAND_0096142,49,0.7786649368823061,5yr applied ml engineer with Pinecone/BM25/RAG; evaluation metrics in career history; production deployment at scale; 3 expert-level AI skills. Concerns: 120d notice period.
+CAND_0099806,50,0.7781490146677664,5yr ai engineer with FAISS/Embeddings/Elasticsearch; evaluation metrics in career history; production deployment at scale; 5 expert-level AI skills.
+CAND_0039383,51,0.7780427072645997,7yr applied ml engineer with FAISS/Elasticsearch/Vector Search; evaluation metrics in career history; production deployment at scale; 6 expert-level AI skills.
+CAND_0052682,52,0.7776950636468654,7yr nlp engineer with FAISS/Embeddings/PyTorch; evaluation metrics in career history; production deployment evidence; 5 expert-level AI skills.
+CAND_0014440,53,0.7766773367397025,6yr recommendation systems engineer with FAISS/Elasticsearch/Milvus; evaluation metrics in career history; production deployment evidence; 3 expert-level AI skills.
+CAND_0093193,54,0.775436280481301,8yr senior machine learning engineer with Machine Learning/TensorFlow; production deployment at scale; 3 expert-level AI skills; platform-verified 75/100.
+CAND_0070398,55,0.7749856989167015,7yr machine learning engineer with FAISS/Embeddings/Information Retrieval; evaluation metrics in career history; production deployment at scale; 7 expert-level AI skills. Concerns: 120d notice period.
+CAND_0050454,56,0.7745559437163544,7yr ai engineer with FAISS/BM25/LangChain; production deployment evidence; 8 expert-level AI skills; strong recruiter engagement (77%).
+CAND_0070525,57,0.7721509780349622,5yr senior software engineer (ml) with Embeddings/Recommendation Systems; production deployment evidence; strong recruiter engagement (93%).
+CAND_0049896,58,0.7709941364353331,7yr search engineer with Information Retrieval/Vector Search/Sentence Transformers; evaluation metrics in career history; production deployment evidence; 3 expert-level AI skills.
+CAND_0090155,59,0.7693307562780948,6yr ml engineer with Pinecone/Milvus; production deployment evidence; platform-verified 80/100; responsive (64% response rate).
+CAND_0004402,60,0.7691157053251377,6yr ai research engineer with Sentence Transformers/Learning to Rank/PyTorch; production deployment evidence; strong recruiter engagement (83%).
+CAND_0006557,61,0.7690927022223841,8yr nlp engineer with FAISS/Elasticsearch/Information Retrieval; evaluation metrics in career history; production deployment at scale; 7 expert-level AI skills. Concerns: 120d notice period.
+CAND_0005311,62,0.7690571589133679,6yr ai research engineer; production deployment evidence; platform-verified 72/100.
+CAND_0036184,63,0.7681111130655719,6yr recommendation systems engineer with FAISS/Embeddings/Pinecone; production deployment evidence; 6 expert-level AI skills; strong recruiter engagement (90%).
+CAND_0005649,64,0.7672037294329687,7yr senior data scientist with Information Retrieval/RAG/Recommendation Systems; evaluation metrics in career history; production deployment at scale; 6 expert-level AI skills.
+CAND_0078492,65,0.7657274515603952,5yr recommendation systems engineer with FAISS/Elasticsearch/BM25; production deployment evidence; 7 expert-level AI skills; responsive (70% response rate).
+CAND_0054394,66,0.7648888918976819,4yr recommendation systems engineer with Embeddings/Pinecone/Machine Learning; evaluation metrics in career history; production deployment evidence; 4 expert-level AI skills.
+CAND_0076163,67,0.7648121748059108,7yr nlp engineer with Elasticsearch/BM25/Sentence Transformers; production deployment at scale; 2 expert-level AI skills; platform-verified 74/100.
+CAND_0005477,68,0.7641037090611971,6yr ml engineer with Machine Learning; production deployment evidence.
+CAND_0058688,69,0.7622020133794821,7yr ai engineer with Embeddings/Information Retrieval/Milvus; evaluation metrics in career history; production deployment evidence; 5 expert-level AI skills.
+CAND_0081852,70,0.7613793057169348,6yr senior data scientist with Milvus/Vector Search; production deployment evidence; 3 expert-level AI skills.
+CAND_0042029,71,0.7586123050729368,6yr senior data scientist with Embeddings/Elasticsearch/RAG; evaluation metrics in career history; production deployment at scale; 5 expert-level AI skills.
+CAND_0079064,72,0.7585838262207864,5yr senior data scientist with Pinecone/Recommendation Systems; production deployment at scale; 4 expert-level AI skills; strong recruiter engagement (91%). Concerns: 120d notice period.
+CAND_0001729,73,0.7578181177638,6yr backend engineer with Elasticsearch/PyTorch; evaluation metrics in career history; production deployment evidence; platform-verified 76/100. Concerns: 120d notice period.
+CAND_0030031,74,0.7578032928769651,6yr ai engineer with Information Retrieval/Milvus/Vector Search; evaluation metrics in career history; production deployment at scale; 5 expert-level AI skills.
+CAND_0086154,75,0.7563614337708977,7yr data scientist with Machine Learning; production deployment evidence; platform-verified 83/100; strong recruiter engagement (90%).
+CAND_0008425,76,0.7561589157604944,8yr senior nlp engineer with Information Retrieval/Sentence Transformers/Learning to Rank; career documents evaluation metric ownership (NDCG/MRR); production deployment at scale; 7 expert-level AI skills.
+CAND_0005509,77,0.7560006864008696,6yr data scientist; production deployment evidence; based in Noida.
+CAND_0095528,78,0.7541763131054794,5yr senior data scientist with Elasticsearch/Vector Search/RAG; evaluation metrics in career history; production deployment evidence; 6 expert-level AI skills.
+CAND_0043637,79,0.7537774484856165,6yr junior ml engineer with Milvus/Learning to Rank/PyTorch; production deployment evidence; strong recruiter engagement (92%).
+CAND_0058575,80,0.7532062687624298,6yr ai engineer with Pinecone/Sentence Transformers/Recommendation Systems; evaluation metrics in career history; production deployment at scale; 5 expert-level AI skills.
+CAND_0055905,81,0.7476908749526712,8yr senior machine learning engineer with Embeddings/Elasticsearch/Information Retrieval; career documents evaluation metric ownership (NDCG/MRR); production deployment at scale; 5 expert-level AI skills.
+CAND_0069905,82,0.7471823576052427,7yr applied ml engineer with Sentence Transformers/LangChain/Learning to Rank; evaluation metrics in career history; production deployment evidence; 6 expert-level AI skills.
+CAND_0078002,83,0.746665044356478,6yr machine learning engineer with LangChain/TensorFlow; evaluation metrics in career history; production deployment at scale; 3 expert-level AI skills.
+CAND_0082086,84,0.7452526219887212,6yr senior software engineer (ml) with FAISS/Pinecone/Milvus; production deployment evidence; strong recruiter engagement (85%).
+CAND_0041610,85,0.7439217004984651,7yr recommendation systems engineer with Embeddings/Elasticsearch/BM25; production deployment evidence; 6 expert-level AI skills.
+CAND_0077285,86,0.7434130818605432,6yr recommendation systems engineer with FAISS/Embeddings/Information Retrieval; evaluation metrics in career history; production deployment at scale; 5 expert-level AI skills.
+CAND_0052195,87,0.7426524459140778,6yr computer vision engineer with Information Retrieval/Sentence Transformers; production deployment evidence; platform-verified 75/100; responsive (69% response rate).
+CAND_0073007,88,0.7422641095961033,6yr ai specialist with FAISS/Embeddings/Milvus; production deployment evidence; strong recruiter engagement (83%).
+CAND_0074225,89,0.7410865456550404,4yr machine learning engineer with Elasticsearch/Milvus/Vector Search; evaluation metrics in career history; production deployment at scale; 6 expert-level AI skills. Concerns: 120d notice period.
+CAND_0060054,90,0.7387879247879415,6yr ai engineer with FAISS/Elasticsearch/Recommendation Systems; evaluation metrics in career history; production deployment at scale; 4 expert-level AI skills.
+CAND_0009691,91,0.736187415928814,6yr applied ml engineer with FAISS/Pinecone/Sentence Transformers; evaluation metrics in career history; production deployment evidence; 6 expert-level AI skills. Concerns: 120d notice period.
+CAND_0009024,92,0.7337147302351371,5yr search engineer with FAISS/Recommendation Systems/Machine Learning; evaluation metrics in career history; production deployment evidence; 4 expert-level AI skills.
+CAND_0069638,93,0.7332175497028524,6yr computer vision engineer with Pinecone/PyTorch; production deployment evidence; platform-verified 75/100; responsive (64% response rate).
+CAND_0065878,94,0.7322946452983917,8yr senior data scientist with Vector Search/RAG/Recommendation Systems; evaluation metrics in career history; production deployment at scale; 4 expert-level AI skills.
+CAND_0018888,95,0.7320933849599833,6yr ai research engineer with FAISS/Information Retrieval; production deployment evidence; responsive (55% response rate); based in Noida.
+CAND_0017093,96,0.7319079782599589,6yr ml engineer with Embeddings/BM25/Learning to Rank; production deployment evidence; responsive (58% response rate).
+CAND_0011432,97,0.7299181857464674,8yr senior data scientist with Elasticsearch/Machine Learning; evaluation metrics in career history; production deployment at scale; responsive (67% response rate).
+CAND_0065195,98,0.7296303148737312,5yr search engineer with Elasticsearch/Learning to Rank; production deployment evidence; 4 expert-level AI skills; strong recruiter engagement (80%).
+CAND_0005538,99,0.7292172708779624,6yr senior ai engineer with PyTorch; evaluation metrics in career history; production deployment at scale; 2 expert-level AI skills.
+CAND_0040117,100,0.7270930271045454,6yr recommendation systems engineer with FAISS/Embeddings/BM25; evaluation metrics in career history; production deployment evidence; 7 expert-level AI skills.

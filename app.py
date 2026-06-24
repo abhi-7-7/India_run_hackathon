@@ -18,14 +18,14 @@ import matplotlib.pyplot as plt
 
 warnings.filterwarnings("ignore")
 
-# ── Optional FAISS (local only — degrades gracefully on Streamlit Cloud) ──────
+
 try:
     import faiss as _faiss
     _FAISS_AVAILABLE = True
 except ImportError:
     _FAISS_AVAILABLE = False
 
-# ── Page config ────────────────────────────────────────────────────────────────
+
 st.set_page_config(
     page_title="REDRO AI — Candidate Ranking",
     page_icon="🎯",
@@ -33,7 +33,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ── NB03-identical constants ────────────────────────────────────────────────────
+
 RETRIEVAL_SKILLS = {
     "Embeddings","FAISS","Milvus","Elasticsearch","BM25",
     "Information Retrieval","Vector Search","Pinecone","Recommendation Systems",
@@ -52,7 +52,7 @@ PREFERRED_CITIES  = {"pune","noida"}
 ACCEPTABLE_CITIES = {"hyderabad","mumbai","bangalore","bengaluru","delhi","new delhi","gurgaon","gurugram"}
 REFERENCE_DATE    = date(2026, 6, 5)
 
-# NB03 CAP_WEIGHTS — identical to NB03 notebook
+
 CAP_WEIGHTS = {
     "sem_capped"                  : 0.25,
     "eval_combo"                  : 0.15,
@@ -83,7 +83,7 @@ Python, production ML, MLOps, 5-9 years experience.
 Pune, Noida, Hyderabad, Mumbai, Delhi NCR."""
 
 
-# ── Data loading (cached) ───────────────────────────────────────────────────────
+
 def _find_output(filename):
     """Notebooks always write to Notebook/outputs/ — look there only."""
     root = os.path.dirname(os.path.abspath(__file__))
@@ -97,7 +97,7 @@ def load_features():
         try:
             return pd.read_pickle(path)
         except (ModuleNotFoundError, ImportError, Exception):
-            # pkl saved with different numpy/pandas version — use CSV fallback
+
             pass
     path = _find_output("features_df.csv")
     if path:
@@ -181,7 +181,7 @@ def get_sample_texts_and_ids(features_df, n=3000):
     if not os.path.exists(path):
         return [], []
 
-    # Stratify: top retrieval + top evaluation + rest
+
     feat = features_df.copy()
     tier1 = feat.nlargest(n // 3, "evaluation_signal_score")["candidate_id"].tolist()
     tier2 = feat.nlargest(n // 3, "retrieval_score")["candidate_id"].tolist()
@@ -193,7 +193,7 @@ def get_sample_texts_and_ids(features_df, n=3000):
                                         random_state=42)["candidate_id"].tolist()
     selected_set = set(selected)
 
-    # Load texts for selected candidates
+
     texts, ids = [], []
     with open(path, encoding="utf-8") as f:
         for line in f:
@@ -222,7 +222,7 @@ def _build_text(c):
     return " ".join(p for p in parts if p)
 
 
-# ── Scoring — IDENTICAL to NB03 ─────────────────────────────────────────────────
+
 def apply_nb03_formula(feat_df, semantic_percentile_override=None):
     """
     Applies NB03 scoring formula exactly.
@@ -231,11 +231,11 @@ def apply_nb03_formula(feat_df, semantic_percentile_override=None):
     """
     ndf = feat_df.copy()
 
-    # Override semantic percentile for custom JD
+
     if semantic_percentile_override is not None:
         ndf["semantic_percentile"] = semantic_percentile_override
 
-    # Normalise via rank(pct=True) — mirrors NB03 Phase 2
+
     RANK_COLS = [
         "retrieval_score", "llm_score", "ml_score", "ai_skill_total",
         "quality_score_log", "avg_ai_duration", "advanced_ai_skills",
@@ -248,7 +248,7 @@ def apply_nb03_formula(feat_df, semantic_percentile_override=None):
         if col in ndf.columns:
             ndf[f"{col}_pct"] = ndf[col].fillna(0).rank(pct=True, method="average")
 
-    # Derived features (NB03 Phase 2)
+
     ndf["eval_combo"]  = (0.6 * ndf["evaluation_signal_score_pct"] +
                           0.4 * (ndf["evaluation_signal_score"] > 0).astype(float))
     ndf["sem_capped"]  = ndf["semantic_percentile"].rank(pct=True).clip(upper=0.97)
@@ -256,10 +256,10 @@ def apply_nb03_formula(feat_df, semantic_percentile_override=None):
     ndf["saved_pct"]   = ndf["saved_by_recruiters_norm"].rank(pct=True, method="average")
     ndf["views_pct"]   = ndf["profile_views_norm"].rank(pct=True, method="average")
 
-    # Capability score (NB03 Phase 3)
+
     ndf["capability_score"] = sum(ndf[col] * w for col, w in CAP_WEIGHTS.items())
 
-    # Validation score (NB03 Phase 4)
+
     ndf["validation_score"] = (
         0.40 * ndf["saved_pct"] +
         0.30 * ndf["recruiter_response_rate"] +
@@ -267,14 +267,14 @@ def apply_nb03_formula(feat_df, semantic_percentile_override=None):
         0.10 * ndf["views_pct"]
     )
 
-    # Base score (NB03 Phase 7)
+
     ndf["base_score"] = (
         0.60 * ndf["capability_score"] +
         0.25 * ndf["validation_score"] +
         0.15 * ndf["avail_pct"]
     )
 
-    # Multipliers (NB03 Phase 5 + 6)
+
     def exp_mult(e):
         if 5 <= e <= 9:   return 1.00
         elif 4 <= e < 5:  return 0.90
@@ -327,7 +327,7 @@ def generate_reasoning(cid, feat_row, cands_lookup):
     return (out + ".").strip()[:250]
 
 
-# ── UI helpers ──────────────────────────────────────────────────────────────────
+
 def render_candidate_card(rank, row, cands_lookup, show_breakdown):
     cid    = row["candidate_id"]
     c      = cands_lookup.get(cid, {})
@@ -377,7 +377,7 @@ def render_candidate_card(rank, row, cands_lookup, show_breakdown):
                     )
 
 
-# ── New-candidate evaluation helpers ─────────────────────────────────────────
+
 
 _EVAL_TRIGGERS = {
     "fit","evaluate","assess","rank this","compare this",
@@ -390,7 +390,7 @@ def _is_eval_intent(q, query):
     """True when the message looks like a new-candidate evaluation request."""
     if any(t in q for t in _EVAL_TRIGGERS):
         return True
-    # key:value structured input
+
     if ":" in query:
         keys_present = {line.split(":")[0].strip().lower()
                         for line in query.split("\n") if ":" in line}
@@ -444,7 +444,7 @@ def _parse_candidate_input(text):
             m = re.search(r"\d+\.?\d*", val)
             if m: parsed["github_score"] = float(m.group())
 
-    # Fallback free-text signals
+
     if parsed["experience"] == 0.0:
         m = re.search(r"(\d+)\s*(?:yr|year)", q)
         if m: parsed["experience"] = float(m.group(1))
@@ -471,7 +471,7 @@ def _score_new_candidate(parsed, thresholds, faiss_index, faiss_ids, features_df
     Returns a result dict; never raises — degrades to lower-confidence output
     if FAISS or model isn't available.
     """
-    # ── Step 1: FAISS semantic similarity ──────────────────────────────────────
+
     nearest_ids, semantic_pct = [], 0.55
     text = (f"{parsed['title']} " +
             " ".join(parsed["skills"]) +
@@ -481,7 +481,8 @@ def _score_new_candidate(parsed, thresholds, faiss_index, faiss_ids, features_df
     if faiss_index is not None and model is not None:
         try:
             emb = model.encode([text], convert_to_numpy=True).astype("float32")
-            _faiss.normalize_L2(emb)
+            norm = np.linalg.norm(emb, axis=1, keepdims=True)
+            emb /= np.where(norm == 0, 1.0, norm)
             scores, indices = faiss_index.search(emb, 5)
             nearest_ids = [str(faiss_ids[i]) for i in indices[0] if i >= 0]
             top_sim = float(scores[0][0])
@@ -492,13 +493,13 @@ def _score_new_candidate(parsed, thresholds, faiss_index, faiss_ids, features_df
         except Exception:
             pass
     else:
-        # No FAISS — estimate from JD skill coverage. Conservative vs. true
-        # embedding similarity but much better than a fixed 0.55.
+
+
         jd_all = {s.lower() for s in (RETRIEVAL_SKILLS | LLM_SKILLS | ML_SKILLS)}
         n_matched = len({s.lower() for s in parsed["skills"]} & jd_all)
         semantic_pct = 0.50 + 0.45 * min(n_matched / 8.0, 1.0)
 
-    # ── Step 2: Feature estimation from parsed fields ──────────────────────────
+
     skill_set = {s.strip() for s in parsed["skills"]}
     skill_lower = {s.lower() for s in skill_set}
 
@@ -508,12 +509,12 @@ def _score_new_candidate(parsed, thresholds, faiss_index, faiss_ids, features_df
     prod_raw    = 0.65 if parsed["has_production"]  else 0.0
     quality_raw = min(1.0, ret_count * 0.2)
     kw_raw      = min(1.0, sum(1 for s in skill_lower if any(s in a.lower() for a in AI_ALL)) * 0.08)
-    assessment  = 0.65  # platform score unknown; assume pool average
+    assessment  = 0.65
 
     notice = parsed["notice_days"]
     avail  = 1.0 if notice <= 30 else (0.85 if notice <= 60 else (0.70 if notice <= 90 else 0.50))
 
-    # ── Step 3: Normalise via pool percentile thresholds ──────────────────────
+
     sem_capped  = min(semantic_pct, 0.97)
     eval_pct    = _estimate_pct(thresholds, "evaluation_signal_score",   eval_raw)
     prod_pct    = _estimate_pct(thresholds, "production_signal_score",   prod_raw)
@@ -527,10 +528,10 @@ def _score_new_candidate(parsed, thresholds, faiss_index, faiss_ids, features_df
 
     capability  = (0.25*sem_capped + 0.15*eval_combo + 0.15*prod_pct +
                    0.18*ret_pct    + 0.11*qual_pct   + 0.07*kw_pct + 0.09*assess_pct)
-    validation  = 0.40*0.50 + 0.30*0.60 + 0.20*0.80 + 0.10*0.40   # platform unknowns → pool avg
+    validation  = 0.40*0.50 + 0.30*0.60 + 0.20*0.80 + 0.10*0.40
     base        = 0.60*capability + 0.25*validation + 0.15*avail_pct
 
-    # ── Step 4: Multipliers (same formula as rank.py) ─────────────────────────
+
     exp = parsed["experience"]
     if 5 <= exp <= 9:    exp_fit = 1.00
     elif 4 <= exp < 5:   exp_fit = 0.90
@@ -544,7 +545,7 @@ def _score_new_candidate(parsed, thresholds, faiss_index, faiss_ids, features_df
 
     final_score = base * consulting_mult * avail * exp_fit * github_mult * prod_gate
 
-    # ── Step 5: Verdict + rank band ───────────────────────────────────────────
+
     if final_score >= 0.92 and exp_fit == 1.0 and parsed["has_eval_signal"]:
         verdict = "STRONG FIT ✅"
     elif final_score >= 0.82 and exp_fit >= 0.9:
@@ -610,7 +611,7 @@ def _render_eval_result(result, chat_df, cands_lookup):
                 render_candidate_card(int(row.iloc[0]["rank"]), row.iloc[0], cands_lookup, False)
 
 
-# ── Chat helpers ─────────────────────────────────────────────────────────────────
+
 def _safe_float(val, default=0.0):
     try:
         return float(val) if val is not None and not (isinstance(val, float) and math.isnan(val)) else default
@@ -624,7 +625,7 @@ def _chat_parse_and_respond(query, chat_df, cands_lookup, faiss_index=None,
     q    = query.lower().strip()
     nums = [int(n) for n in re.findall(r'\b(\d{1,3})(?:st|nd|rd|th)?\b', q) if 1 <= int(n) <= 100]
 
-    # ── New-candidate evaluation intent ──────────────────────────────────────
+
     if _is_eval_intent(q, query):
         parsed = _parse_candidate_input(query)
         if parsed["experience"] == 0 and not parsed["skills"] and not parsed["title"]:
@@ -660,7 +661,7 @@ def _chat_parse_and_respond(query, chat_df, cands_lookup, faiss_index=None,
     is_range   = bool(re.search(r'\b\d+\s*(?:to|through)\s*\d+\b|\b\d+-\d+\b', query, re.IGNORECASE)) and len(nums) == 2
     has_multi  = ("," in query) or (re.search(r'\band\b', q) and len(nums) > 1)
 
-    # ── Compare two ranked candidates ─────────────────────────────────────────
+
     if is_compare and len(nums) >= 2:
         r1, r2 = nums[0], nums[1]
         row1 = chat_df[chat_df["rank"] == r1]
@@ -712,7 +713,7 @@ def _chat_parse_and_respond(query, chat_df, cands_lookup, faiss_index=None,
         )
         return {"role":"assistant","content":text,"show_ranks":[r1,r2],"comparison":comp_rows}
 
-    # ── Range ─────────────────────────────────────────────────────────────────
+
     elif is_range and len(nums) == 2:
         r_start, r_end = min(nums), max(nums)
         cap_note = ""
@@ -727,7 +728,7 @@ def _chat_parse_and_respond(query, chat_df, cands_lookup, faiss_index=None,
             "comparison": None, "eval_result": None,
         }
 
-    # ── Specific list ─────────────────────────────────────────────────────────
+
     elif has_multi and len(nums) > 1 and not is_compare:
         return {
             "role": "assistant",
@@ -736,7 +737,7 @@ def _chat_parse_and_respond(query, chat_df, cands_lookup, faiss_index=None,
             "comparison": None, "eval_result": None,
         }
 
-    # ── Single rank ───────────────────────────────────────────────────────────
+
     elif len(nums) == 1:
         r   = nums[0]
         row = chat_df[chat_df["rank"] == r]
@@ -744,7 +745,7 @@ def _chat_parse_and_respond(query, chat_df, cands_lookup, faiss_index=None,
             return {"role":"assistant","content":f"No candidate found at rank {r}.","show_ranks":[],"comparison":None}
         return {"role":"assistant","content":f"Candidate at rank **{r}**:","show_ranks":[r],"comparison":None}
 
-    # ── Help ──────────────────────────────────────────────────────────────────
+
     else:
         return {
             "role": "assistant",
@@ -767,11 +768,11 @@ def _chat_parse_and_respond(query, chat_df, cands_lookup, faiss_index=None,
         }
 
 
-# ── MAIN UI ─────────────────────────────────────────────────────────────────────
+
 st.title("🎯 REDRO AI — Candidate Ranking Demo")
 st.caption("Evidence-first recruiter decision engine · [github.com/abhi-7-7/India_run_hackathon](https://github.com/abhi-7-7/India_run_hackathon)")
 
-# Load all resources
+
 features_df  = load_features()
 submission   = load_submission()
 cands_lookup = load_candidates_lookup()
@@ -782,7 +783,7 @@ if features_df is None:
     st.error("⚠️  `outputs/features_df.pkl` not found. Run `python rank.py` first.")
     st.stop()
 
-# Sidebar
+
 with st.sidebar:
     st.markdown("## ⚙️  Configuration")
 
@@ -827,7 +828,7 @@ with st.sidebar:
             n_results  = r_end - r_start + 1
             specific_ranks_list = []
 
-        else:  # Specific Ranks
+        else:
             spec_inp = st.text_input("Ranks (e.g. 42, 44, 67)", value="1, 5, 10")
             specific_ranks_list = []
             for tok in re.split(r'[\s,]+', spec_inp):
@@ -848,13 +849,13 @@ with st.sidebar:
         st.markdown("**Sample:** 3,000 stratified candidates")
         st.markdown("**Runtime:** ~15 sec (first run, then cached)")
 
-# Tabs
+
 tab1, tab2, tab3, tab4 = st.tabs(["🏆 Top Candidates", "📊 Score Analysis", "💼 Pool Insights", "💬 Chat"])
 
-# ── TAB 1: Top Candidates ────────────────────────────────────────────────────────
+
 with tab1:
     if "Default" in mode:
-        # Exact submission results — guaranteed to match REDRO_AI.csv
+
         if submission is None:
             st.warning("submission.csv not found in outputs/. Run `python rank.py` first.")
         else:
@@ -865,7 +866,7 @@ with tab1:
                               "days_since_active","notice_period","is_honeypot","expert_ai_skills"]],
                 on="candidate_id", how="left"
             )
-            # ── Filter by display mode ────────────────────────────────────────
+
             if disp_type == "Top N":
                 rows_to_show = sub_with_feats.head(n_results)
                 label = f"top {n_results}"
@@ -875,7 +876,7 @@ with tab1:
                     (sub_with_feats["rank"] <= rank_range[1])
                 ]
                 label = f"ranks {rank_range[0]}–{rank_range[1]}"
-            else:  # Specific Ranks
+            else:
                 if not specific_ranks_list:
                     st.warning("Enter at least one valid rank (1–100).")
                     rows_to_show = pd.DataFrame()
@@ -892,7 +893,7 @@ with tab1:
                 for _, row in rows_to_show.iterrows():
                     render_candidate_card(int(row["rank"]), row, cands_lookup, show_bd)
 
-    else:  # Custom JD mode
+    else:
         if not run_btn:
             st.info("👈  Edit the Job Description in the sidebar and click **Rank Now**.")
         else:
@@ -920,13 +921,13 @@ with tab1:
                 jd_emb    = model.encode([jd_text], convert_to_numpy=True)
                 sims      = cos_sim(jd_emb, cand_embs)[0]
 
-            # Build sample features_df with new semantic similarity
+
             sample_df = features_df[features_df["candidate_id"].isin(set(sample_ids))].copy()
             sim_series = pd.Series(sims, index=sample_ids, name="new_sim")
             sample_df  = sample_df.join(sim_series.rename("_new_sem"), on="candidate_id")
             new_sem_pct= sample_df["_new_sem"].rank(pct=True)
 
-            # Apply NB03 formula with new semantic scores
+
             scored = apply_nb03_formula(sample_df, semantic_percentile_override=new_sem_pct)
             top_n  = scored.sort_values("final_score", ascending=False).head(n_results).copy()
             top_n["rank"] = range(1, len(top_n) + 1)
@@ -938,7 +939,7 @@ with tab1:
             for _, row in top_n.iterrows():
                 render_candidate_card(int(row["rank"]), row, cands_lookup, show_bd)
 
-# ── TAB 2: Score Analysis ────────────────────────────────────────────────────────
+
 with tab2:
     st.markdown("### Score Distributions — Submitted Top 100")
 
@@ -955,26 +956,26 @@ with tab2:
         fig, axes = plt.subplots(2, 3, figsize=(14, 8))
         axes = axes.flatten()
 
-        # Score distribution
+
         axes[0].hist(sub_feats["score"], bins=15, color="#4C72B0", edgecolor="white", alpha=0.85)
         axes[0].axvline(sub_feats["score"].median(), color="#c0392b", linestyle="--",
                         label=f"Median {sub_feats['score'].median():.3f}")
         axes[0].set_title("Final Score Distribution", fontweight="bold")
         axes[0].set_xlabel("Score"); axes[0].legend()
 
-        # Experience distribution
+
         axes[1].hist(sub_feats["experience_years"], bins=12, color="#DD8452", edgecolor="white", alpha=0.85)
         axes[1].axvspan(5, 9, alpha=0.15, color="green", label="JD target (5-9yr)")
         axes[1].set_title("Experience Distribution", fontweight="bold")
         axes[1].set_xlabel("Years"); axes[1].legend()
 
-        # Semantic vs Score scatter
+
         axes[2].scatter(sub_feats["semantic_percentile"], sub_feats["score"],
                         alpha=0.6, color="#4C72B0", s=20)
         axes[2].set_title("Semantic Align vs Final Score", fontweight="bold")
         axes[2].set_xlabel("Semantic Percentile"); axes[2].set_ylabel("Score")
 
-        # Evaluation signal
+
         has_eval = (sub_feats["evaluation_signal_score"] > 0).sum()
         axes[3].bar(["No eval signal","Has eval signal"],
                     [100-has_eval, has_eval], color=["#c0392b","#27ae60"], alpha=0.85)
@@ -983,12 +984,12 @@ with tab2:
         for i, v in enumerate([100-has_eval, has_eval]):
             axes[3].text(i, v+0.5, f"{v}", ha="center", fontweight="bold")
 
-        # Retrieval score histogram
+
         axes[4].hist(sub_feats["retrieval_score"], bins=10, color="#55A868", edgecolor="white", alpha=0.85)
         axes[4].set_title("Retrieval Score Distribution", fontweight="bold")
         axes[4].set_xlabel("Retrieval Score (raw)")
 
-        # Score vs Rank line
+
         sr = sub_feats.sort_values("rank") if "rank" in sub_feats else sub_feats.sort_values("score", ascending=False)
         axes[5].plot(range(1, len(sr)+1), sr["score"].values, color="#4C72B0", linewidth=2)
         axes[5].fill_between(range(1, len(sr)+1), sr["score"].values, alpha=0.15, color="#4C72B0")
@@ -1008,7 +1009,7 @@ with tab2:
         col4.metric("Score Gap (R1–R100)",
                     f"{sub_feats['score'].max()-sub_feats['score'].min():.4f}")
 
-# ── TAB 3: Pool Insights ─────────────────────────────────────────────────────────
+
 with tab3:
     st.markdown("### 100,000 Candidate Pool — Business Intelligence")
 
@@ -1020,7 +1021,7 @@ with tab3:
 
     fig2, axes2 = plt.subplots(1, 3, figsize=(14, 4))
 
-    # Eval signal sparsity
+
     n_pool = len(features_df)
     no_eval  = (features_df["evaluation_signal_score"] == 0).sum()
     low_eval = ((features_df["evaluation_signal_score"]>0) & (features_df["evaluation_signal_score"]<=0.4)).sum()
@@ -1032,14 +1033,14 @@ with tab3:
     for i, v in enumerate([no_eval, low_eval, hi_eval]):
         axes2[0].text(i, v+200, f"{100*v/n_pool:.1f}%", ha="center", fontsize=9, fontweight="bold")
 
-    # Experience distribution
+
     axes2[1].hist(features_df["experience_years"], bins=20, color="#4C72B0",
                   edgecolor="white", alpha=0.85, density=True)
     axes2[1].axvspan(5, 9, alpha=0.15, color="green", label="JD target")
     axes2[1].set_title("Experience Distribution\n(Full Pool)", fontweight="bold")
     axes2[1].set_xlabel("Years"); axes2[1].legend()
 
-    # Availability breakdown
+
     inactive_90  = (features_df["days_since_active"] > 90).sum()
     inactive_180 = (features_df["days_since_active"] > 180).sum()
     active_30    = (features_df["days_since_active"] <= 30).sum()
@@ -1066,7 +1067,7 @@ with tab3:
         st.caption("Shows which features actually drive the ranking. 69% overlap for Experience Fit "
                    "means removing it moves 31 candidates out of the top-100.")
 
-# ── TAB 4: Chat ───────────────────────────────────────────────────────────────────
+
 with tab4:
     st.markdown("### 💬 Candidate Intelligence Chat")
     st.caption(
@@ -1077,7 +1078,7 @@ with tab4:
     if submission is None:
         st.warning("Run `python rank.py` first to enable chat.")
     else:
-        # Build merged dataframe for chat (submission scores + feature signals)
+
         _CHAT_COLS = [c for c in [
             "candidate_id", "experience_years", "evaluation_signal_score",
             "production_signal_score", "retrieval_score", "semantic_percentile",
@@ -1093,11 +1094,11 @@ with tab4:
             .reset_index(drop=True)
         )
 
-        # Session state
+
         if "chat_messages" not in st.session_state:
             st.session_state.chat_messages = []
 
-        # Render chat history
+
         for _msg in st.session_state.chat_messages:
             with st.chat_message(_msg["role"]):
                 st.markdown(_msg["content"])
@@ -1114,7 +1115,7 @@ with tab4:
                 if _msg.get("eval_result"):
                     _render_eval_result(_msg["eval_result"], _chat_df, cands_lookup)
 
-        # Chat input
+
         if _prompt := st.chat_input("Ask about candidates or paste new candidate details…"):
             st.session_state.chat_messages.append({
                 "role": "user", "content": _prompt,
@@ -1129,7 +1130,7 @@ with tab4:
             st.session_state.chat_messages.append(_response)
             st.rerun()
 
-        # Clear button
+
         if st.session_state.chat_messages:
             if st.button("🗑️  Clear chat", key="clear_chat"):
                 st.session_state.chat_messages = []

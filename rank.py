@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python3
 """
 REDRO AI Hackathon — End-to-End Candidate Ranking Pipeline
 ==========================================================
@@ -22,9 +22,12 @@ import pandas as pd
 warnings.filterwarnings("ignore")
 pd.set_option("display.float_format", "{:.4f}".format)
 
+
+
+
 ROOT       = os.path.dirname(os.path.abspath(__file__))
 NB_OUTPUTS = os.path.join(ROOT, "Notebook", "outputs")
-os.makedirs(NB_OUTPUTS, exist_ok=True) 
+os.makedirs(NB_OUTPUTS, exist_ok=True)
 
 DATASET_PATH          = os.path.join(ROOT, "raw_dataset", "candidates.jsonl")
 CACHE_EMBEDDINGS      = os.path.join(NB_OUTPUTS, "semantic_similarity.npy")
@@ -35,6 +38,7 @@ SCORING_THRESHOLDS    = os.path.join(NB_OUTPUTS, "scoring_thresholds.pkl")
 OUTPUT_CSV            = os.path.join(ROOT, "REDRO_AI.csv")
 
 REFERENCE_DATE   = date(2026, 6, 5)
+
 
 RETRIEVAL_SKILLS = {
     "Embeddings","FAISS","Milvus","Elasticsearch","BM25",
@@ -86,6 +90,7 @@ ACCEPTABLE_CITIES = {
     "delhi","new delhi","gurgaon","gurugram","navi mumbai",
 }
 
+
 TECH_TITLE_KEYWORDS = {
     "engineer","scientist","developer","researcher","programmer",
     "sde","data scientist","machine learning","applied scientist",
@@ -102,12 +107,14 @@ NON_CODING_TITLE_KEYWORDS = {
     "engineering manager","architect",
 }
 
+
+
 SENIORITY_LEVELS = [
     (4, ["director","vp","vice president","chief"]),
     (3, ["principal","head of"]),
     (2, ["staff","lead "]),
     (1, ["senior","sr."]),
-    (0, []),  
+    (0, []),
 ]
 def _seniority_level(title):
     t = title.lower()
@@ -141,6 +148,9 @@ PRIORITY_SKILLS = [
 ]
 
 
+
+
+
 def load_candidates(path):
     print(f"Loading candidates from {path}...")
     candidates = []
@@ -152,6 +162,10 @@ def load_candidates(path):
     print(f"  Loaded: {len(candidates):,} candidates")
     return candidates
 
+
+
+
+
 def build_candidate_text(c):
     parts = []
     parts.append(c["profile"].get("current_title", ""))
@@ -162,6 +176,9 @@ def build_candidate_text(c):
         parts.append(job.get("title", ""))
         parts.append(job.get("description", ""))
     return " ".join(p for p in parts if p).strip()
+
+
+
 
 
 def get_semantic_similarities(candidates, cache_path):
@@ -198,41 +215,43 @@ def get_semantic_similarities(candidates, cache_path):
     sims = cos_sim(jd_emb, cand_embs)[0]
 
     np.save(cache_path, sims)
-    np.save(CACHE_EMBEDDINGS_RAW, cand_embs)  
+    np.save(CACHE_EMBEDDINGS_RAW, cand_embs)
     print(f"  Cached to {cache_path}")
     return sims
 
 
+
+
+
 def build_faiss_index(candidates):
-    """
-    Builds a FAISS IndexFlatIP over all-MiniLM-L6-v2 candidate embeddings.
-    Requires CACHE_EMBEDDINGS_RAW (written when running rank.py from scratch).
-    If raw embeddings aren't present (legacy cache), prints a one-time note
-    and skips gracefully — all other pipeline steps still run normally.
-    """
     if not os.path.exists(CACHE_EMBEDDINGS_RAW):
         print("  FAISS: raw embeddings not found — delete semantic_similarity.npy "
               "and re-run rank.py once to build the index.")
         return False
     try:
         import faiss
-    except ImportError:
-        print("  FAISS: faiss-cpu not installed (pip install faiss-cpu) — skipping.")
+
+        print("Building FAISS index...")
+        cand_embs = np.load(CACHE_EMBEDDINGS_RAW).astype("float32")
+        norms = np.linalg.norm(cand_embs, axis=1, keepdims=True)
+        norms[norms == 0] = 1.0
+        cand_embs /= norms
+
+        index = faiss.IndexFlatIP(cand_embs.shape[1])
+        index.add(cand_embs)
+        faiss.write_index(index, FAISS_INDEX_PATH)
+
+        cand_ids = np.array([c["candidate_id"] for c in candidates])
+        np.save(FAISS_IDS_PATH, cand_ids)
+
+        print(f"  FAISS: {index.ntotal:,} vectors, dim={cand_embs.shape[1]} → {FAISS_INDEX_PATH}")
+        return True
+
+    except Exception as e:
+        print(f"  FAISS: skipping — {type(e).__name__}: {e}")
+        print("  Chat evaluation works without FAISS (uses skills-based scoring instead).")
+        print("  To fix: pip install 'faiss-cpu<1.8' or use Python 3.11/3.12")
         return False
-
-    print("Building FAISS index...")
-    cand_embs = np.load(CACHE_EMBEDDINGS_RAW).astype("float32")
-    faiss.normalize_L2(cand_embs)                     
-
-    index = faiss.IndexFlatIP(cand_embs.shape[1])     
-    index.add(cand_embs)
-    faiss.write_index(index, FAISS_INDEX_PATH)
-
-    cand_ids = np.array([c["candidate_id"] for c in candidates])
-    np.save(FAISS_IDS_PATH, cand_ids)
-
-    print(f"  FAISS: {index.ntotal:,} vectors, dim={cand_embs.shape[1]} → {FAISS_INDEX_PATH}")
-    return True
 
 
 def save_scoring_thresholds(features_df):
@@ -261,9 +280,13 @@ def save_scoring_thresholds(features_df):
     print(f"  Scoring thresholds saved ({len(thresholds)} signals → {SCORING_THRESHOLDS})")
 
 
+
+
+
 def engineer_features(candidates, similarities):
     print("Engineering features...")
     rows = []
+
 
     texts = [build_candidate_text(c).lower() for c in candidates]
 
@@ -278,6 +301,7 @@ def engineer_features(candidates, similarities):
         skill_names = {s["name"] for s in skills}
         text        = texts[idx]
 
+
         ret = len(skill_names & RETRIEVAL_SKILLS)
         llm = len(skill_names & LLM_SKILLS)
         ml  = len(skill_names & ML_SKILLS)
@@ -285,15 +309,19 @@ def engineer_features(candidates, similarities):
 
         hidden_count = sum(1 for sig_kw in HIDDEN_SIGNALS if sig_kw.lower() in text)
 
+
         eval_kws  = ["ndcg","mrr","map","a/b test","offline eval","online eval","ranking quality","retrieval quality"]
         eval_score = min(1.0, sum(1 for kw in eval_kws if kw in text) / 3)
+
 
         prod_kws   = ["deployed","production","shipped","live traffic","real users","millions","at scale","launched"]
         prod_score = min(1.0, sum(1 for kw in prod_kws if kw in text) / 3)
 
+
         career_kws = ["retrieval","ranking","search","recommendation","information retrieval",
                       "embedding","vector","similarity","relevance","re-ranking"]
         career_score = min(1.0, sum(1 for kw in career_kws if kw in text) / 5)
+
 
         ai_skills_list = [s for s in skills if s["name"] in AI_ALL_SKILLS]
         if ai_skills_list:
@@ -310,6 +338,7 @@ def engineer_features(candidates, similarities):
         else:
             quality_log = avg_ai_duration = adv_ai = exp_ai = max_endorse = 0.0
 
+
         assess = sig.get("skill_assessment_scores", {})
         all_scores = list(assess.values())
         ai_scores  = [v for k, v in assess.items() if k in AI_ALL_SKILLS]
@@ -318,11 +347,13 @@ def engineer_features(candidates, similarities):
         avg_assess    = float(np.mean(all_scores)) if all_scores else 0.0
         avg_ai_assess = float(np.mean(ai_scores))  if ai_scores  else 0.0
 
+
         rr   = sig["recruiter_response_rate"]
         ic   = sig["interview_completion_rate"]
         saved_raw = sig["saved_by_recruiters_30d"]
         views_raw = sig["profile_views_received_30d"]
         appear_raw= sig["search_appearance_30d"]
+
 
         last_raw = sig.get("last_active_date")
         if not last_raw:
@@ -358,10 +389,12 @@ def engineer_features(candidates, similarities):
         avail_score = (0.35 * recency_score + 0.25 * openness +
                        0.20 * loc_score + 0.10 * notice_score + 0.10 * wm_score)
 
+
         raw_gh    = sig["github_activity_score"]
         has_gh    = int(raw_gh != -1)
         raw_offer = sig["offer_acceptance_rate"]
         has_offer = int(raw_offer != -1)
+
 
         exp_years = profile["years_of_experience"]
         job_count = len(jobs)
@@ -375,6 +408,7 @@ def engineer_features(candidates, similarities):
                          if any(pc in j.get("company","").lower() for pc in PRODUCT_COMPANIES))
         product_ratio = product_mo / total_mo if total_mo > 0 else 0.0
 
+
         all_titles = (profile.get("current_title","") + " " +
                       " ".join(j.get("title","") for j in jobs)).lower()
         has_tech_title    = any(kw in all_titles for kw in TECH_TITLE_KEYWORDS)
@@ -386,23 +420,33 @@ def engineer_features(candidates, similarities):
         else:
             title_credibility = 0.7
 
+
         llm_duration    = sum(s.get("duration_months",0) for s in skills if s["name"] in LLM_SKILLS)
         pre_llm_duration = sum(s.get("duration_months",0) for s in skills
                                if s["name"] in (ML_SKILLS | RETRIEVAL_SKILLS))
         recent_llm_only = int(llm_duration > 0 and llm_duration <= 12 and pre_llm_duration < 24)
+
 
         cur_title_lower = profile.get("current_title","").lower()
         non_coding_role = int(
             exp_years >= 5 and
             any(kw in cur_title_lower for kw in NON_CODING_TITLE_KEYWORDS)
         )
+
+
+
+
+
+
+
         avg_tenure_months = total_mo / job_count if job_count > 0 else 999
-        
+
         chrono_levels = [_seniority_level(j.get("title","")) for j in reversed(jobs)]
         climbed = (len(chrono_levels) >= 3 and
                    all(b >= a for a, b in zip(chrono_levels, chrono_levels[1:])) and
                    (max(chrono_levels) - min(chrono_levels)) >= 2)
         job_hopper = int(climbed and job_count >= 3 and avg_tenure_months < 18)
+
 
         hp_flags = 0
         for s in skills:
@@ -415,12 +459,14 @@ def engineer_features(candidates, similarities):
             hp_flags += 1
         is_honeypot = int(hp_flags >= 2)
 
+
         cert_names  = {cert["name"] for cert in certs}
         has_ai_cert = int(bool(cert_names & AI_CERTS))
         ai_cert_cnt = len(cert_names & AI_CERTS)
 
         rows.append({
             "candidate_id"          : cid,
+
             "retrieval_score"       : ret * 3,
             "llm_score"             : llm * 2,
             "ml_score"              : ml,
@@ -429,20 +475,24 @@ def engineer_features(candidates, similarities):
             "evaluation_signal_score": eval_score,
             "production_signal_score": prod_score,
             "career_keyword_score"  : career_score,
+
             "quality_score_log"     : quality_log,
             "avg_ai_duration"       : avg_ai_duration,
             "advanced_ai_skills"    : adv_ai,
             "expert_ai_skills"      : exp_ai,
             "max_endorsements_ai"   : max_endorse,
+
             "has_assessment"        : has_assess,
             "has_ai_assessment"     : has_ai_assess,
             "avg_assessment_score"  : avg_assess,
             "avg_ai_assessment_score": avg_ai_assess,
+
             "recruiter_response_rate"  : rr,
             "interview_completion_rate": ic,
             "saved_by_recruiters_raw"  : saved_raw,
             "profile_views_raw"        : views_raw,
             "search_appearance_raw"    : appear_raw,
+
             "days_since_active"    : days_inactive,
             "recency_score"        : recency_score,
             "notice_period"        : notice,
@@ -451,26 +501,34 @@ def engineer_features(candidates, similarities):
             "location_score"       : loc_score,
             "openness_score"       : openness,
             "availability_score"   : avail_score,
+
             "has_github"           : has_gh,
             "github_activity_raw"  : raw_gh,
             "has_offer_history"    : has_offer,
+
             "experience_years"     : exp_years,
             "job_count"            : job_count,
             "consulting_ratio"     : consulting_ratio,
             "product_ratio"        : product_ratio,
             "is_honeypot"          : is_honeypot,
+
             "title_credibility"    : title_credibility,
             "recent_llm_only"      : recent_llm_only,
             "non_coding_role"      : non_coding_role,
             "job_hopper"           : job_hopper,
+
             "has_ai_cert"          : has_ai_cert,
             "ai_cert_count"        : ai_cert_cnt,
+
             "semantic_similarity"  : float(similarities[idx]),
         })
 
     df = pd.DataFrame(rows)
     print(f"  Features engineered: {df.shape}")
     return df
+
+
+
 
 
 def rank_candidates(df, stages=None):
@@ -483,12 +541,14 @@ def rank_candidates(df, stages=None):
     ndf = df.copy()
     N   = len(ndf)
 
+
     if "title_cred" in stages:
         ndf["retrieval_score_eff"]     = ndf["retrieval_score"]     * ndf["title_credibility"]
         ndf["career_keyword_score_eff"] = ndf["career_keyword_score"] * ndf["title_credibility"]
     else:
         ndf["retrieval_score_eff"]      = ndf["retrieval_score"]
         ndf["career_keyword_score_eff"] = ndf["career_keyword_score"]
+
 
     RANK_COLS = [
         "retrieval_score_eff","llm_score","ml_score","ai_skill_total",
@@ -501,12 +561,14 @@ def rank_candidates(df, stages=None):
     for col in RANK_COLS:
         ndf[f"{col}_pct"] = ndf[col].fillna(0).rank(pct=True, method="average")
 
+
     ndf["eval_combo"]   = (0.6 * ndf["evaluation_signal_score_pct"] +
                            0.4 * (ndf["evaluation_signal_score"] > 0).astype(float))
     ndf["sem_capped"]   = ndf["semantic_similarity"].rank(pct=True).clip(upper=0.97)
     ndf["avail_pct"]    = ndf["availability_score"].rank(pct=True)
     ndf["saved_pct"]    = ndf["saved_by_recruiters_raw_pct"]
     ndf["views_pct"]    = ndf["profile_views_raw_pct"]
+
 
     CAP = {
         "sem_capped"                     : 0.25,
@@ -519,6 +581,7 @@ def rank_candidates(df, stages=None):
     }
     ndf["capability_score"] = sum(ndf[col] * w for col, w in CAP.items())
 
+
     ndf["validation_score"] = (
         0.40 * ndf["saved_pct"] +
         0.30 * ndf["recruiter_response_rate"] +
@@ -526,11 +589,13 @@ def rank_candidates(df, stages=None):
         0.10 * ndf["views_pct"]
     )
 
+
     ndf["base_score"] = (
         0.60 * ndf["capability_score"] +
         0.25 * ndf["validation_score"] +
         0.15 * ndf["avail_pct"]
     )
+
 
     def exp_mult(e):
         if 5 <= e <= 9:   return 1.00
@@ -545,25 +610,37 @@ def rank_candidates(df, stages=None):
     ndf["risk_multiplier"]         = ((1 - 0.80 * ndf["consulting_ratio"]) *
                                       ndf["is_honeypot"].map({0:1.0, 1:0.05}))
 
+
+
+
+
+
     if "prod_gate" in stages:
         ndf["production_gate_mult"] = np.where(ndf["production_signal_score"] == 0, 0.5, 1.0)
     else:
         ndf["production_gate_mult"] = 1.0
+
 
     if "recent_llm" in stages:
         ndf["recent_llm_mult"] = ndf["recent_llm_only"].map({0:1.0, 1:0.6})
     else:
         ndf["recent_llm_mult"] = 1.0
 
+
     if "non_coding" in stages:
         ndf["non_coding_mult"] = ndf["non_coding_role"].map({0:1.0, 1:0.6})
     else:
         ndf["non_coding_mult"] = 1.0
 
+
     if "job_hop" in stages:
         ndf["job_hop_mult"] = ndf["job_hopper"].map({0:1.0, 1:0.8})
     else:
         ndf["job_hop_mult"] = 1.0
+
+
+
+
     if "github" in stages:
         ndf["github_mult"] = np.where(
             ndf["github_activity_raw"] >= 0,
@@ -588,6 +665,9 @@ def rank_candidates(df, stages=None):
 
     print(f"  Score range: {ndf['final_score'].min():.4f} – {ndf['final_score'].max():.4f}")
     return ndf
+
+
+
 
 
 def generate_reasoning(cid, feat_row, candidates_lookup):
@@ -656,6 +736,9 @@ def generate_reasoning(cid, feat_row, candidates_lookup):
     return (reasoning + ".").strip()[:250]
 
 
+
+
+
 def validate_and_export(top100_df, submission_path):
     sub = top100_df[["candidate_id","rank","final_score","reasoning"]].copy()
     sub = sub.rename(columns={"final_score": "score"})
@@ -709,10 +792,16 @@ def sync_notebook_outputs(sub_df, full_features_df):
     sub_df.to_csv(os.path.join(out_dir, "submission.csv"), index=False)
 
     export_df = full_features_df.copy()
+
+
+
     if "semantic_percentile" not in export_df.columns and "sem_capped" in export_df.columns:
         export_df["semantic_percentile"] = export_df["sem_capped"]
     export_df.to_csv(os.path.join(out_dir, "features_df.csv"), index=False)
     print(f"  Synced Notebook/outputs/submission.csv + features_df.csv (no more drift)")
+
+
+
 
 
 def main():
@@ -720,18 +809,24 @@ def main():
     print("  REDRO AI — Candidate Ranking Pipeline")
     print("="*55 + "\n")
 
+
     candidates = load_candidates(DATASET_PATH)
     candidates_lookup = {c["candidate_id"]: c for c in candidates}
 
+
     similarities = get_semantic_similarities(candidates, CACHE_EMBEDDINGS)
 
+
     features_df = engineer_features(candidates, similarities)
+
 
     build_faiss_index(candidates)
     save_scoring_thresholds(features_df)
 
+
     ALL_STAGES = {"title_cred","prod_gate","recent_llm","non_coding","job_hop","github"}
     scored_df = rank_candidates(features_df, stages=ALL_STAGES)
+
 
     ranked = (scored_df
               .sort_values("final_score", ascending=False)
@@ -739,15 +834,18 @@ def main():
     ranked["rank"] = ranked.index + 1
     top100 = ranked.head(100).copy()
 
+
     print("Generating reasoning for top 100...")
     feat_idx = scored_df.set_index("candidate_id")
     top100["reasoning"] = top100["candidate_id"].apply(
         lambda cid: generate_reasoning(cid, feat_idx.loc[cid], candidates_lookup)
     )
 
+
     validate_and_export(top100, OUTPUT_CSV)
     sync_notebook_outputs(top100[["candidate_id","rank","final_score","reasoning"]]
                           .rename(columns={"final_score":"score"}), scored_df)
+
 
     print("\nTop 10 Candidates:")
     print(f"{'Rank':>5}  {'Candidate ID':<15}  {'Score':>8}  Reasoning")
