@@ -382,6 +382,11 @@ def render_candidate_card(rank, row, cands_lookup, show_breakdown):
 _EVAL_TRIGGERS = {
     "fit","evaluate","assess","rank this","compare this",
     "is this","new candidate","hire","should we","what do you think",
+    "i have a candidate","i have a candid","candidate with",
+    "years of experience","yrs of experience","year of experience",
+    "this candidate","working as","previously working",
+    "deployed project","deployed system","deployed model",
+    "should i hire","would you hire","is he a fit","is she a fit",
 }
 _INPUT_FIELD_KEYS = {"title","experience","exp","skills","evaluation","eval",
                      "production","prod","location","consulting","notice","github"}
@@ -446,12 +451,28 @@ def _parse_candidate_input(text):
 
 
     if parsed["experience"] == 0.0:
-        m = re.search(r"(\d+)\s*(?:yr|year)", q)
-        if m: parsed["experience"] = float(m.group(1))
+        m = re.search(r'(\d+\.?\d*)\s*(?:yr|year)', q)
+        if m:
+            parsed["experience"] = float(m.group(1))
     if not parsed["has_eval_signal"]:
-        parsed["has_eval_signal"] = any(kw in q for kw in ["ndcg","mrr","map","a/b test"])
+        parsed["has_eval_signal"] = any(kw in q for kw in ["ndcg","mrr","map","a/b test","offline eval","ranking metric"])
     if not parsed["has_production"]:
-        parsed["has_production"] = any(kw in q for kw in ["deployed","shipped","production","at scale"])
+        parsed["has_production"] = any(kw in q for kw in [
+            "deployed","shipped","production","at scale","serving",
+            "deployed project","deployed system","deployed model","in production",
+        ])
+
+    ALL_KNOWN_SKILLS = (RETRIEVAL_SKILLS | LLM_SKILLS | ML_SKILLS |
+                        {"Python","Docker","Kubernetes","AWS","GCP","Azure"})
+    if not parsed["skills"]:
+        found = [s for s in ALL_KNOWN_SKILLS if s.lower() in q]
+        if found:
+            parsed["skills"] = found
+
+    if not parsed["title"]:
+        m = re.search(r'working as (?:an? )?([a-z ]{3,30}?)(?:\.|,|$| in)', q)
+        if m:
+            parsed["title"] = m.group(1).strip().title()
 
     return parsed
 
