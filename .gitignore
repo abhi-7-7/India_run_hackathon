@@ -5,7 +5,6 @@ __pycache__/
 .DS_Store
 .ipynb_checkpoints/
 raw_dataset/*
-*.zip
 /outputs/
 EDA/*
 Notebook/outputs/*
