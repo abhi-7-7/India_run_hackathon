@@ -95,11 +95,28 @@ def load_features():
     if path:
         try:
             return pd.read_pickle(path)
-        except Exception:
-            pass
+        except Exception as e:
+            st.warning(f"⚠️ pkl load failed ({e}) — falling back to CSV.")
+
     path = _find_output("features_df.csv")
     if path:
-        return pd.read_csv(path)
+        df = pd.read_csv(path)
+        if "saved_by_recruiters_norm" not in df.columns and "saved_by_recruiters_raw" in df.columns:
+            df["saved_by_recruiters_norm"] = (
+                df["saved_by_recruiters_raw"] / df["saved_by_recruiters_raw"].max()
+            )
+        if "profile_views_norm" not in df.columns and "profile_views_raw" in df.columns:
+            df["profile_views_norm"] = (
+                df["profile_views_raw"] / df["profile_views_raw"].max()
+            )
+        if "search_appearance_norm" not in df.columns and "search_appearance_raw" in df.columns:
+            df["search_appearance_norm"] = (
+                df["search_appearance_raw"] / df["search_appearance_raw"].max()
+            )
+        if "hidden_signal_bonus" not in df.columns and "hidden_signal_count" in df.columns:
+            df["hidden_signal_bonus"] = (df["hidden_signal_count"] * 0.03).clip(upper=0.15)
+        return df
+
     return None
 
 
